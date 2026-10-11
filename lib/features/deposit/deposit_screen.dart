@@ -7,6 +7,7 @@ import '../../core/utils/formatters.dart';
 import '../../data/models/deposit_model.dart';
 import '../../data/models/goal_model.dart';
 import '../../core/providers/global_providers.dart';
+import '../../widgets/celebration_overlay.dart';
 
 class DepositScreen extends ConsumerStatefulWidget {
   final GoalModel goal;
@@ -362,14 +363,37 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
     setState(() => _isLoading = false);
 
     if (result != null && mounted) {
-      if (result.newMilestoneReached || result.isGoalCompleted) {
+      if (result.newMilestoneReached ||
+          result.isGoalCompleted ||
+          result.newBadges.isNotEmpty) {
         HapticFeedback.heavyImpact();
       } else {
         HapticFeedback.mediumImpact();
       }
 
-      Navigator.of(context).pop();
+      final rootNav = Navigator.of(context);
+      rootNav.pop();
       widget.onDepositSaved?.call();
+
+      if (rootNav.context.mounted) {
+        if (result.isGoalCompleted) {
+          CelebrationOverlay.showGoalCompleted(
+            rootNav.context,
+            goalName: widget.goal.name,
+          );
+        } else if (result.newBadges.isNotEmpty) {
+          CelebrationOverlay.showBadgeUnlocked(
+            rootNav.context,
+            badgeTitle: result.newBadges.first.title,
+          );
+        } else if (result.newMilestoneReached) {
+          CelebrationOverlay.showMilestoneReached(
+            rootNav.context,
+            goalName: widget.goal.name,
+            milestonePercent: result.milestonesAfter * 25,
+          );
+        }
+      }
 
       final milestoneMessage = result.newMilestoneReached
           ? ' 🎯 Novo marco de ${result.milestonesAfter * 25}% atingido!'
