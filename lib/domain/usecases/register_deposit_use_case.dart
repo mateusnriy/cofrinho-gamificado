@@ -3,6 +3,7 @@ import '../../data/models/deposit_model.dart';
 import '../../data/models/goal_model.dart';
 import '../../data/repositories/deposit_repository.dart';
 import '../../data/repositories/goal_repository.dart';
+import '../../core/utils/notification_service.dart';
 
 class DepositResult {
   final GoalModel goal;
@@ -66,6 +67,20 @@ class RegisterDepositUseCase {
     final updatedGoal = _goalRepo.getById(goalId) ?? goal;
     final milestonesAfter = updatedGoal.completedMilestonesCount;
     final coinsEarned = amount.floor();
+
+    // Se a meta foi concluída com este depósito, cancela lembretes diários e celebra (AD-5)
+    if (updatedGoal.isCompleted) {
+      if (updatedGoal.reminderTime != null) {
+        try {
+          await NotificationService().cancelGoalReminder(updatedGoal.id.hashCode);
+        } catch (_) {}
+      }
+      try {
+        await NotificationService().showCompletionNotification(
+          goalName: updatedGoal.name,
+        );
+      } catch (_) {}
+    }
 
     return DepositResult(
       goal: updatedGoal,

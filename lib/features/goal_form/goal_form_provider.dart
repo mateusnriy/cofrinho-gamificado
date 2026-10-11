@@ -4,6 +4,8 @@ import 'package:uuid/uuid.dart';
 
 import '../../data/models/goal_model.dart';
 import '../../core/providers/global_providers.dart';
+import '../../core/utils/formatters.dart';
+import '../../core/utils/notification_service.dart';
 import '../../data/repositories/goal_repository.dart';
 
 class GoalFormState {
@@ -208,6 +210,24 @@ class GoalFormNotifier extends StateNotifier<GoalFormState> {
     );
 
     await _repo.save(goal);
+
+    // Gerencia agendamento defensivo de notificações locais (AD-5)
+    try {
+      if (existingGoal?.reminderTime != null &&
+          existingGoal?.reminderTime != goal.reminderTime) {
+        await NotificationService().cancelGoalReminder(goal.id.hashCode);
+      }
+
+      if (goal.reminderTime != null && !goal.isCompleted && !goal.isArchived) {
+        await NotificationService().scheduleGoalReminder(
+          notificationId: goal.id.hashCode,
+          goalName: goal.name,
+          timeStr: goal.reminderTime!,
+        );
+      }
+    } catch (_) {
+      // Isolamento defensivo: falha no serviço nativo não compromete persistência
+    }
 
     state = state.copyWith(isLoading: false);
     return true;
