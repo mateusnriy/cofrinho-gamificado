@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="lib/assets/icon/logo.png" alt="Porko Logo" width="130"/>
+  <img src="lib/assets/icon/logo.png" alt="Oinc Logo" width="130"/>
 </p>
 
-<h1 align="center">🐷 Porko: Cofrinho Gamificado</h1>
+<h1 align="center">🐷 Oinc: Meu cofrinho virtual</h1>
 
 <p align="center">
   <strong>Transforme o hábito de poupar dinheiro em uma jornada divertida, visual e sem complicação.</strong>
@@ -26,7 +26,7 @@
 
 ## 📋 Sobre o Projeto
 
-O **Porko** é um aplicativo móvel gratuito e **100% offline-first** focado em educação financeira prática e gamificação comportamental. Desenvolvido em Flutter, o aplicativo resolve o desafio comum da procrastinação financeira ao criar um **duplo loop de recompensa**: o usuário poupa dinheiro na vida real enquanto cuida, alimenta e personaliza o seu mascote virtual **Porko**.
+O **Oinc: Meu cofrinho virtual** é um aplicativo móvel gratuito e **100% offline-first** focado em educação financeira prática e gamificação comportamental. Desenvolvido em Flutter, o aplicativo resolve o desafio comum da procrastinação financeira ao criar um **duplo loop de recompensa**: o usuário poupa dinheiro na vida real enquanto cuida, alimenta e personaliza o seu cofrinho virtual com o mascote **Porko**.
 
 A cada economia registrada no mundo real, o usuário ganha **Oinc Coins** para adquirir cosméticos exclusivos na loja in-app (Porko Store), desbloqueia badges de conquistas, avança em mapas de marcos (*milestones*) e mantém sequências diárias (*streaks*).
 

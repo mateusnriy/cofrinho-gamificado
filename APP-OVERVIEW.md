@@ -1,4 +1,4 @@
-# 🐷 Porko: Cofrinho Gamificado — Guia Oficial do Produto
+# 🐷 Oinc: Meu cofrinho virtual — Guia Oficial do Produto
 
 > **"Transforme o hábito de poupar dinheiro em uma jornada divertida, visual e sem complicação."**
 
@@ -6,9 +6,9 @@
 
 ## 📌 Visão Geral
 
-O **Porko: Cofrinho Gamificado** é um aplicativo móvel gratuito e **100% offline-first** criado para ajudar pessoas de todas as idades — especialmente jovens e iniciantes em finanças — a transformar sonhos e metas financeiras em conquistas reais através do poder da gamificação acolhedora e dos micro-hábitos diários.
+O **Oinc: Meu cofrinho virtual** é um aplicativo móvel gratuito e **100% offline-first** criado para ajudar pessoas de todas as idades — especialmente jovens e iniciantes em finanças — a transformar sonhos e metas financeiras em conquistas reais através do poder da gamificação acolhedora e dos micro-hábitos diários.
 
-Diferente dos tradicionais aplicativos de controle financeiro burocráticos, repletos de planilhas complexas, anúncios invasivos e pedidos de senhas bancárias, o Porko propõe uma experiência humana, segura e divertida: **você cuida do seu dinheiro na vida real enquanto cuida do seu mascote virtual no aplicativo.**
+Diferente dos tradicionais aplicativos de controle financeiro burocráticos, repletos de planilhas complexas, anúncios invasivos e pedidos de senhas bancárias, o **Oinc** propõe uma experiência humana, segura e divertida: **você cuida do seu dinheiro na vida real enquanto cuida do seu cofrinho virtual no aplicativo.**
 
 ---
 
@@ -20,7 +20,7 @@ Diferente dos tradicionais aplicativos de controle financeiro burocráticos, rep
 * **Burocracia e ansiedade com apps tradicionais:** Aplicativos cheios de gráficos frios, exigência de CPF, dados bancários e telas confusas afastam quem só quer guardar dinheiro com tranquilidade.
 * **Falta de privacidade e risco de dados:** Medo de compartilhar extratos ou senhas bancárias com terceiros.
 
-### 2. A Solução: Como o Porko transforma essa realidade?
+### 2. A Solução: Como o Oinc transforma essa realidade?
 * **Duplo Loop de Recompensa:** Cada depósito simbólico registrado no app gera confetes, alimenta o mascote **Porko** e concede **Oinc Coins** virtuais. O usuário sente satisfação imediata no mesmo instante em que poupa no mundo real.
 * **Planejador em 2 Passos com Projeções Automáticas:** O usuário define o valor-alvo e o prazo final. O app calcula na hora quanto guardar por dia, por semana ou por mês sem fazer contas de cabeça.
 * **Marcos Visuais Interativos (Milestones):** Metas grandes são quebradas automaticamente em 4 degraus visuais (25%, 50%, 75% e 100%), permitindo comemorar cada vitória intermediária.
@@ -31,7 +31,7 @@ Diferente dos tradicionais aplicativos de controle financeiro burocráticos, rep
 
 ## 🌟 Pilares e Diferenciais Únicos
 
-| Pilar | Como Funciona no Porko |
+| Pilar | Como Funciona no Oinc |
 | :--- | :--- |
 | 🛡️ **Privacidade em Primeiro Lugar** | Seus dados financeiros pertencem apenas a você. Armazenamento local com banco NoSQL Hive de alta velocidade. |
 | 🎮 **Gamificação Acolhedora** | Nada de punições agressivas ou perda punitiva de dinheiro. O app incentiva a consistência com streaks diários, medalhas e itens cosméticos. |
@@ -71,34 +71,32 @@ Diferente dos tradicionais aplicativos de controle financeiro burocráticos, rep
 
 ## 🛍️ Ficha de Apresentação para Publicação nas Lojas
 
-### 🏷️ Nomes Sugeridos & Posicionamento
+### 🏷️ Identidade Oficial do App
 
-1. **Porko: Cofrinho Gamificado** *(Nome Oficial Recomendado)*
-   * *Subtítulo / Short Description:* Metas financeiras, economia divertida e mascote virtual offline.
-2. **Oinc: Poupança & Metas Gamificadas**
-   * *Subtítulo / Short Description:* Transforme moedas em conquistas e guarde dinheiro se divertindo.
-3. **Porko Nummus: Cofrinho Digital**
-   * *Subtítulo / Short Description:* O app de metas financeiras com gamificação e 100% offline.
+* **Nome Oficial:** **Oinc: Meu cofrinho virtual**
+* **Subtítulo / Short Description:** Poupe dinheiro, cuide do seu cofrinho virtual e alcance suas metas!
+* **Categoria Principal:** Finanças / Estilo de Vida
+* **Classificação Indicativa:** Livre / Para todos
 
 ---
 
 ### 📝 Textos Prontos para Google Play Store & Apple App Store
 
 #### 🔹 Descrição Curta (Até 80 caracteres)
-> Poupe dinheiro, vista seu mascote Porko e alcance suas metas de forma divertida!
+> Poupe dinheiro, cuide do seu cofrinho virtual e alcance suas metas se divertindo!
 
 #### 🔹 Descrição Longa (Store Listing)
 ```markdown
-Quer juntar dinheiro para uma viagem, um eletrônico novo ou sua reserva de emergência, mas perde a motivação no meio do caminho? Conheça o Porko: o cofrinho gamificado que transforma a economia de dinheiro em um hábito leve, recompensador e divertido!
+Quer juntar dinheiro para uma viagem, um eletrônico novo ou sua reserva de emergência, mas perde a motivação no meio do caminho? Conheça o Oinc: Meu cofrinho virtual — o aplicativo que transforma a economia de dinheiro em um hábito leve, recompensador e divertido!
 
-Ao contrário dos aplicativos de finanças tradicionais cheios de planilhas frias e exigências de dados bancários, o Porko coloca a sua privacidade e a sua motivação em primeiro lugar.
+Ao contrário dos aplicativos de finanças tradicionais cheios de planilhas frias e exigências de dados bancários, o Oinc coloca a sua privacidade e a sua motivação em primeiro lugar.
 
-✨ POR QUE VOCÊ VAI AMAR O PORKO:
+✨ POR QUE VOCÊ VAI AMAR O OINC:
 
 🎯 METAS CLARAS EM POUCOS TOQUES
-Defina o seu sonho, o valor necessário e o prazo. O Porko calcula automaticamente quanto você precisa poupar por dia, semana ou mês. Sem contas difíceis!
+Defina o seu sonho, o valor necessário e o prazo. O Oinc calcula automaticamente quanto você precisa poupar por dia, semana ou mês. Sem contas difíceis!
 
-🐷 CUIDE DO SEU MASCOTE PORKO
+🐷 CUIDE DO SEU COFRINHO E MASCOTE PORKO
 Cada depósito registrado alegra o seu mascote Porko. Acompanhe suas reações e veja-o comemorar cada passo da sua conquista financeira!
 
 🪙 GANHE OINC COINS E PERSONALIZE
@@ -116,11 +114,11 @@ Mantenha a chama da disciplina acesa! Receba lembretes amigáveis no horário qu
 • Nenhuma conexão com contas bancárias.
 • Zero anúncios e zero compras in-app.
 
-Baixe o Porko agora e dê o primeiro passo para conquistar seus sonhos enquanto se diverte! 🐷🚀
+Baixe o Oinc agora e dê o primeiro passo para conquistar seus sonhos enquanto se diverte! 🐷🚀
 ```
 
 #### 🔹 Palavras-chave / Tags para ASO
-`cofrinho, cofrinho digital, poupança, metas financeiras, gamificação, educação financeira, economizar dinheiro, finanças pessoais, offline, mascote virtual, hábitos`
+`oinc, cofrinho virtual, cofrinho, cofrinho digital, poupança, metas financeiras, gamificação, educação financeira, economizar dinheiro, finanças pessoais, offline, mascote virtual, hábitos`
 
 ---
 
