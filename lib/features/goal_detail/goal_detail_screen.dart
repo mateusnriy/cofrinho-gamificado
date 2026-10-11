@@ -143,6 +143,11 @@ class GoalDetailScreen extends ConsumerWidget {
     final depositRepo = ref.read(depositRepositoryProvider);
 
     if (action == 'archive') {
+      if (goal.reminderTime != null) {
+        try {
+          await NotificationService().cancelGoalReminder(goal.id.hashCode);
+        } catch (_) {}
+      }
       await repo.archive(goal.id);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
