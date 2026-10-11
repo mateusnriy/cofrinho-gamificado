@@ -265,6 +265,8 @@ class _PremiumSummaryBanner extends StatelessWidget {
     final totalSaved = (stats['totalSaved'] as double?) ?? 0;
     final totalTarget = (stats['totalTarget'] as double?) ?? 0;
     final overallProgress = (stats['overallProgress'] as double?) ?? 0;
+    final totalGoals = (stats['totalGoals'] as int?) ?? 0;
+    final completed = (stats['completed'] as int?) ?? 0;
 
     if (totalTarget == 0) return const SizedBox.shrink();
 
@@ -299,11 +301,12 @@ class _PremiumSummaryBanner extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Património Guardado',
+                'Patrimônio Guardado',
                 style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500),
+                  color: Colors.white70,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
               Container(
                 padding:
@@ -315,9 +318,10 @@ class _PremiumSummaryBanner extends StatelessWidget {
                 child: Text(
                   AppFormatters.percent(overallProgress * 100),
                   style: const TextStyle(
-                      color: Color(0xFF34D399),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13),
+                    color: Color(0xFF34D399),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
                 ),
               ),
             ],
@@ -332,30 +336,63 @@ class _PremiumSummaryBanner extends StatelessWidget {
               letterSpacing: -1,
             ),
           ),
-          const SizedBox(height: 24),
-          Text(
-            'De ${AppFormatters.currency(totalTarget)} em metas globais',
-            style: const TextStyle(color: Colors.white54, fontSize: 13),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'De ${AppFormatters.currency(totalTarget)} em $totalGoals meta${totalGoals != 1 ? 's' : ''}',
+                style: const TextStyle(color: Colors.white60, fontSize: 13),
+              ),
+              if (completed > 0)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10B981).withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.check_circle_rounded,
+                        size: 13,
+                        color: Color(0xFF34D399),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$completed concluída${completed != 1 ? 's' : ''}',
+                        style: const TextStyle(
+                          color: Color(0xFF34D399),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 12),
           Stack(
             children: [
               Container(
-                height: 6,
+                height: 8,
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(8),
                 ),
               ),
               LayoutBuilder(
                 builder: (context, constraints) {
                   return Container(
-                    height: 6,
+                    height: 8,
                     width:
                         constraints.maxWidth * overallProgress.clamp(0.0, 1.0),
                     decoration: BoxDecoration(
                       color: const Color(0xFF34D399),
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(8),
                       boxShadow: const [
                         BoxShadow(color: Color(0xFF34D399), blurRadius: 8),
                       ],

@@ -80,7 +80,7 @@ class GoalRepository {
     await _box.delete(goalId);
   }
 
-  /// Estatísticas gerais
+  /// Estatísticas gerais de patrimônio consolidado
   Map<String, dynamic> getStats() {
     final active = getActive();
     final totalTarget = active.fold<double>(0, (s, g) => s + g.targetAmount);
@@ -92,7 +92,9 @@ class GoalRepository {
       'totalTarget': totalTarget,
       'totalSaved': totalSaved,
       'completed': completed,
-      'overallProgress': totalTarget > 0 ? totalSaved / totalTarget : 0.0,
+      'overallProgress': totalTarget > 0
+          ? (totalSaved / totalTarget).clamp(0.0, 1.0)
+          : 0.0,
     };
   }
 }
