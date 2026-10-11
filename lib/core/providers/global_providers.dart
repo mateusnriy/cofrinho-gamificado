@@ -3,6 +3,7 @@ import '../../data/models/badge_model.dart';
 import '../../data/repositories/goal_repository.dart';
 import '../../data/repositories/deposit_repository.dart';
 import '../../data/repositories/gamification_repository.dart';
+import '../../data/repositories/wallet_repository.dart';
 import '../../domain/usecases/register_deposit_use_case.dart';
 import '../../domain/usecases/evaluate_badges_use_case.dart';
 
@@ -16,6 +17,10 @@ final depositRepositoryProvider = Provider<DepositRepository>((ref) {
 
 final gamificationRepositoryProvider = Provider<GamificationRepository>((ref) {
   return GamificationRepository();
+});
+
+final walletRepositoryProvider = Provider<WalletRepository>((ref) {
+  return WalletRepository();
 });
 
 final goalBoxChangesProvider = StreamProvider<void>((ref) {
@@ -33,6 +38,17 @@ final gamificationBoxChangesProvider = StreamProvider<void>((ref) {
   return repo.watchAll.map((_) {});
 });
 
+final walletBoxChangesProvider = StreamProvider<void>((ref) {
+  final repo = ref.watch(walletRepositoryProvider);
+  return repo.watchAll.map((_) {});
+});
+
+final walletBalanceProvider = Provider<int>((ref) {
+  final repo = ref.watch(walletRepositoryProvider);
+  ref.watch(walletBoxChangesProvider);
+  return repo.getBalance();
+});
+
 final streakProvider = Provider<Map<String, dynamic>>((ref) {
   final repo = ref.watch(gamificationRepositoryProvider);
   ref.watch(gamificationBoxChangesProvider);
@@ -47,10 +63,12 @@ final registerDepositUseCaseProvider = Provider<RegisterDepositUseCase>((ref) {
   final goalRepo = ref.watch(goalRepositoryProvider);
   final depositRepo = ref.watch(depositRepositoryProvider);
   final gamificationRepo = ref.watch(gamificationRepositoryProvider);
+  final walletRepo = ref.watch(walletRepositoryProvider);
   return RegisterDepositUseCase(
     goalRepo: goalRepo,
     depositRepo: depositRepo,
     gamificationRepo: gamificationRepo,
+    walletRepo: walletRepo,
   );
 });
 

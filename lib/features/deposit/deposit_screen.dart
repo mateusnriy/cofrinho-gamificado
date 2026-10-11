@@ -395,6 +395,8 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
         }
       }
 
+      final bonusMessage =
+          result.dailyBonusEarned ? ' (com +50 de bônus diário!)' : '';
       final milestoneMessage = result.newMilestoneReached
           ? ' 🎯 Novo marco de ${result.milestonesAfter * 25}% atingido!'
           : '';
@@ -407,7 +409,7 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Depósito de ${AppFormatters.currency(amount)} registrado! 🪙 +${result.coinsEarned} Oinc Coins!$milestoneMessage',
+                  'Depósito de ${AppFormatters.currency(amount)} registrado! 🪙 +${result.coinsEarned} Oinc Coins$bonusMessage!$milestoneMessage',
                 ),
               ),
             ],
