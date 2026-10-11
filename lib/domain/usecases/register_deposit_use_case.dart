@@ -1,10 +1,12 @@
 import 'package:uuid/uuid.dart';
 import '../../data/models/deposit_model.dart';
 import '../../data/models/goal_model.dart';
+import '../../data/models/badge_model.dart';
 import '../../data/repositories/deposit_repository.dart';
 import '../../data/repositories/goal_repository.dart';
 import '../../data/repositories/gamification_repository.dart';
 import '../../core/utils/notification_service.dart';
+import 'evaluate_badges_use_case.dart';
 
 class DepositResult {
   final GoalModel goal;
@@ -16,6 +18,7 @@ class DepositResult {
   final int milestonesAfter;
   final bool newMilestoneReached;
   final int currentStreak;
+  final List<BadgeDefinition> newBadges;
 
   const DepositResult({
     required this.goal,
@@ -27,6 +30,7 @@ class DepositResult {
     required this.milestonesAfter,
     required this.newMilestoneReached,
     this.currentStreak = 1,
+    this.newBadges = const [],
   });
 }
 
@@ -71,9 +75,18 @@ class RegisterDepositUseCase {
     await _goalRepo.addDeposit(goalId, amount);
 
     int currentStreak = 1;
+    List<BadgeDefinition> newBadges = [];
+
     if (_gamificationRepo != null) {
       try {
-        currentStreak = await _gamificationRepo.registerDepositDate(deposit.date);
+        currentStreak =
+            await _gamificationRepo!.registerDepositDate(deposit.date);
+        final evaluateBadges = EvaluateBadgesUseCase(
+          goalRepo: _goalRepo,
+          depositRepo: _depositRepo,
+          gamificationRepo: _gamificationRepo!,
+        );
+        newBadges = await evaluateBadges.execute();
       } catch (_) {}
     }
 
@@ -106,6 +119,7 @@ class RegisterDepositUseCase {
       milestonesAfter: milestonesAfter,
       newMilestoneReached: milestonesAfter > milestonesBefore,
       currentStreak: currentStreak,
+      newBadges: newBadges,
     );
   }
 }

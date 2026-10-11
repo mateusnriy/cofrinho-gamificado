@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../data/models/badge_model.dart';
 import '../../data/repositories/goal_repository.dart';
 import '../../data/repositories/deposit_repository.dart';
 import '../../data/repositories/gamification_repository.dart';
 import '../../domain/usecases/register_deposit_use_case.dart';
+import '../../domain/usecases/evaluate_badges_use_case.dart';
 
 final goalRepositoryProvider = Provider<GoalRepository>((ref) {
   return GoalRepository();
@@ -50,4 +52,21 @@ final registerDepositUseCaseProvider = Provider<RegisterDepositUseCase>((ref) {
     depositRepo: depositRepo,
     gamificationRepo: gamificationRepo,
   );
+});
+
+final evaluateBadgesUseCaseProvider = Provider<EvaluateBadgesUseCase>((ref) {
+  final goalRepo = ref.watch(goalRepositoryProvider);
+  final depositRepo = ref.watch(depositRepositoryProvider);
+  final gamificationRepo = ref.watch(gamificationRepositoryProvider);
+  return EvaluateBadgesUseCase(
+    goalRepo: goalRepo,
+    depositRepo: depositRepo,
+    gamificationRepo: gamificationRepo,
+  );
+});
+
+final badgesProvider = Provider<List<UserBadge>>((ref) {
+  final repo = ref.watch(gamificationRepositoryProvider);
+  ref.watch(gamificationBoxChangesProvider);
+  return repo.getAllUserBadges();
 });

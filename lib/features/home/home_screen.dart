@@ -10,6 +10,7 @@ import '../../widgets/goal_card.dart';
 import '../goal_form/goal_form_screen.dart';
 import '../goal_detail/goal_detail_screen.dart';
 import '../deposit/deposit_screen.dart';
+import '../gamification/badges_gallery_screen.dart';
 import 'home_provider.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -158,6 +159,32 @@ class HomeScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
+              Container(
+                margin: const EdgeInsets.only(right: 12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardTheme.color,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                    )
+                  ],
+                ),
+                child: IconButton(
+                  icon: const Icon(
+                    Icons.emoji_events_rounded,
+                    color: Color(0xFFF59E0B),
+                  ),
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const BadgesGalleryScreen(),
+                    ),
+                  ),
+                  tooltip: 'Galeria de Conquistas',
+                ),
+              ),
               Container(
                 margin: const EdgeInsets.only(right: 12),
                 decoration: BoxDecoration(

@@ -1,11 +1,14 @@
 import 'dart:math';
 import 'package:hive_flutter/hive_flutter.dart';
 
+import '../models/badge_model.dart';
+
 class GamificationRepository {
   static const String boxName = 'gamification';
   static const String _currentStreakKey = 'current_streak';
   static const String _longestStreakKey = 'longest_streak';
   static const String _lastDepositDateKey = 'last_deposit_date';
+  static const String _unlockedBadgesKey = 'unlocked_badges';
 
   Box get _box => Hive.box(boxName);
 
@@ -65,6 +68,53 @@ class GamificationRepository {
     await _box.put(_lastDepositDateKey, depositDate.toIso8601String());
 
     return currentStreak;
+  }
+
+  /// Retorna o mapa de badges desbloqueados com suas respectivas datas
+  Map<String, DateTime> getUnlockedBadges() {
+    final raw = _box.get(_unlockedBadgesKey);
+    if (raw == null || raw is! Map) return {};
+    final result = <String, DateTime>{};
+    raw.forEach((key, value) {
+      if (key is String && value is String) {
+        final parsed = DateTime.tryParse(value);
+        if (parsed != null) {
+          result[key] = parsed;
+        }
+      }
+    });
+    return result;
+  }
+
+  /// Verifica se um determinado badge já está desbloqueado
+  bool isBadgeUnlocked(String badgeId) {
+    final unlocked = getUnlockedBadges();
+    return unlocked.containsKey(badgeId);
+  }
+
+  /// Desbloqueia um badge de forma estritamente idempotente
+  /// Retorna true se acabou de ser desbloqueado pela 1ª vez, false se já existia
+  Future<bool> unlockBadge(String badgeId, [DateTime? date]) async {
+    final current = Map<String, dynamic>.from((_box.get(_unlockedBadgesKey) as Map?) ?? {});
+    if (current.containsKey(badgeId)) {
+      return false; // Já estava desbloqueado
+    }
+
+    final unlockTime = date ?? DateTime.now();
+    current[badgeId] = unlockTime.toIso8601String();
+    await _box.put(_unlockedBadgesKey, current);
+    return true;
+  }
+
+  /// Retorna todos os badges do catálogo com o status de desbloqueio do usuário
+  List<UserBadge> getAllUserBadges() {
+    final unlocked = getUnlockedBadges();
+    return BadgeDefinition.all.map((def) {
+      return UserBadge(
+        definition: def,
+        unlockedAt: unlocked[def.id],
+      );
+    }).toList();
   }
 
   /// Stream reativa de eventos da gamification_box
