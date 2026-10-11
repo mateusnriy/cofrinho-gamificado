@@ -93,6 +93,7 @@ class GoalDetailScreen extends ConsumerWidget {
               goalId: goalId,
               goal: goal,
               goalColor: goalColor,
+              onAddDeposit: () => _openDepositSheet(context, ref, goal),
             ),
             const SizedBox(height: 100),
           ],
@@ -470,16 +471,22 @@ class _DepositHistory extends ConsumerWidget {
   final String goalId;
   final GoalModel goal;
   final Color goalColor;
+  final VoidCallback? onAddDeposit;
 
   const _DepositHistory({
     required this.deposits,
     required this.goalId,
     required this.goal,
     required this.goalColor,
+    this.onAddDeposit,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Garante rigorosamente a ordenação cronológica decrescente (mais recente primeiro)
+    final sortedDeposits = [...deposits]
+      ..sort((a, b) => b.date.compareTo(a.date));
+
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color,
@@ -489,51 +496,54 @@ class _DepositHistory extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Histórico',
+                  'Histórico de Depósitos',
                   style: Theme.of(context).textTheme.headlineSmall,
                 ),
-                Text(
-                  '${deposits.length} depósito${deposits.length != 1 ? 's' : ''}',
-                  style: Theme.of(context).textTheme.bodySmall,
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: goalColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    sortedDeposits.isEmpty
+                        ? '0 depósitos'
+                        : '${sortedDeposits.length} depósito${sortedDeposits.length != 1 ? 's' : ''}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: goalColor,
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
-          if (deposits.isEmpty)
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Center(
-                child: Column(
-                  children: [
-                    Icon(Icons.history_rounded,
-                        size: 40, color: Colors.grey.shade300),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Nenhum depósito ainda',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-              ),
+          if (sortedDeposits.isEmpty)
+            _EmptyDepositState(
+              goal: goal,
+              goalColor: goalColor,
+              onAddDeposit: onAddDeposit,
             )
           else
             ListView.separated(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: deposits.length,
+              itemCount: sortedDeposits.length,
               separatorBuilder: (_, __) => Divider(
                 height: 1,
-                color: Colors.grey.shade100,
+                color: Theme.of(context).dividerColor.withValues(alpha: 0.2),
                 indent: 16,
                 endIndent: 16,
               ),
               itemBuilder: (_, index) {
-                final deposit = deposits[index];
+                final deposit = sortedDeposits[index];
                 return _DepositTile(
                   deposit: deposit,
                   goalColor: goalColor,
@@ -556,7 +566,7 @@ class _DepositHistory extends ConsumerWidget {
       builder: (_) => AlertDialog(
         title: const Text('Remover depósito?'),
         content: Text(
-          'Deseja remover o depósito de ${AppFormatters.currency(deposit.amount)}?',
+          'Deseja remover o depósito de ${AppFormatters.currency(deposit.amount)} realizado em ${AppFormatters.dateTime(deposit.date)}?\n\nO saldo acumulado da meta será recalculado.',
         ),
         actions: [
           TextButton(
@@ -583,10 +593,85 @@ class _DepositHistory extends ConsumerWidget {
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Depósito removido')),
+          SnackBar(
+            content: Text(
+              'Depósito de ${AppFormatters.currency(deposit.amount)} removido.',
+            ),
+          ),
         );
       }
     }
+  }
+}
+
+class _EmptyDepositState extends StatelessWidget {
+  final GoalModel goal;
+  final Color goalColor;
+  final VoidCallback? onAddDeposit;
+
+  const _EmptyDepositState({
+    required this.goal,
+    required this.goalColor,
+    this.onAddDeposit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+      child: Center(
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: goalColor.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.savings_outlined,
+                size: 44,
+                color: goalColor,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              'Cofrinho pronto para a primeira moeda!',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Toda grande conquista começa com o primeiro passo. Registre seu primeiro depósito para iniciar seu progresso e ganhar Oinc Coins!',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.grey.shade600,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            if (!goal.isCompleted && onAddDeposit != null) ...[
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: onAddDeposit,
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: const Text('Fazer Primeiro Depósito'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: goalColor,
+                  foregroundColor: Colors.white,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -603,39 +688,96 @@ class _DepositTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      leading: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: goalColor.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(
-          Icons.arrow_downward_rounded,
-          color: goalColor,
-          size: 18,
-        ),
-      ),
-      title: Text(
-        AppFormatters.currency(deposit.amount),
-        style: TextStyle(
-          fontWeight: FontWeight.w600,
-          color: goalColor,
-        ),
-      ),
-      subtitle: Text(
-        deposit.note?.isNotEmpty == true
-            ? '${AppFormatters.dateTime(deposit.date)} • ${deposit.note}'
-            : AppFormatters.dateTime(deposit.date),
-        style: const TextStyle(fontSize: 12),
-      ),
-      trailing: IconButton(
-        icon: Icon(Icons.delete_outline_rounded,
-            size: 18, color: Colors.grey.shade400),
-        onPressed: onDelete,
-        tooltip: 'Remover depósito',
+    final hasNote = deposit.note != null && deposit.note!.trim().isNotEmpty;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: goalColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              Icons.arrow_downward_rounded,
+              color: goalColor,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  AppFormatters.currency(deposit.amount),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: goalColor,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  AppFormatters.dateTime(deposit.date),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontSize: 12,
+                      ),
+                ),
+                if (hasNote) ...[
+                  const SizedBox(height: 6),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.06)
+                          : Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.notes_rounded,
+                          size: 13,
+                          color: isDark ? Colors.white60 : Colors.grey.shade600,
+                        ),
+                        const SizedBox(width: 5),
+                        Flexible(
+                          child: Text(
+                            deposit.note!,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontStyle: FontStyle.italic,
+                              color: isDark
+                                  ? Colors.white70
+                                  : Colors.grey.shade800,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          IconButton(
+            icon: Icon(
+              Icons.delete_outline_rounded,
+              size: 20,
+              color: Colors.grey.shade400,
+            ),
+            onPressed: onDelete,
+            tooltip: 'Remover depósito',
+          ),
+        ],
       ),
     );
   }
