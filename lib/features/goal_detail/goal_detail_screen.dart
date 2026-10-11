@@ -9,6 +9,7 @@ import '../../data/models/deposit_model.dart';
 import '../../core/providers/global_providers.dart';
 import '../../widgets/celebration_overlay.dart';
 import '../../widgets/economy_suggestions_card.dart';
+import '../../core/utils/notification_service.dart';
 import '../deposit/deposit_screen.dart';
 import '../goal_form/goal_form_screen.dart';
 import 'goal_detail_provider.dart';
@@ -150,13 +151,18 @@ class GoalDetailScreen extends ConsumerWidget {
         Navigator.of(context).pop();
       }
     } else if (action == 'delete') {
-      final confirmed = await _confirmDelete(context);
+      final confirmed = await _confirmDelete(context, goal);
       if (confirmed && context.mounted) {
+        if (goal.reminderTime != null) {
+          try {
+            await NotificationService().cancelGoalReminder(goal.id.hashCode);
+          } catch (_) {}
+        }
         await depositRepo.deleteAllByGoal(goal.id);
         await repo.delete(goal.id);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Meta excluída')),
+            SnackBar(content: Text('Meta "${goal.name}" excluída com sucesso')),
           );
           Navigator.of(context).pop();
         }
@@ -164,13 +170,13 @@ class GoalDetailScreen extends ConsumerWidget {
     }
   }
 
-  Future<bool> _confirmDelete(BuildContext context) async {
+  Future<bool> _confirmDelete(BuildContext context, GoalModel goal) async {
     return await showDialog<bool>(
           context: context,
           builder: (_) => AlertDialog(
-            title: const Text('Excluir meta?'),
-            content: const Text(
-              'Esta ação não pode ser desfeita. Todo o histórico de depósitos também será removido.',
+            title: const Text('Excluir meta permanentemente?'),
+            content: Text(
+              'Você está prestes a excluir a meta "${goal.name}".\n\nEsta ação é irreversível e todo o histórico de depósitos associados será permanentemente removido.',
             ),
             actions: [
               TextButton(
@@ -179,7 +185,10 @@ class GoalDetailScreen extends ConsumerWidget {
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
-                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.red,
+                  textStyle: const TextStyle(fontWeight: FontWeight.bold),
+                ),
                 child: const Text('Excluir'),
               ),
             ],

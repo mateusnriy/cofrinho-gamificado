@@ -88,7 +88,7 @@ class GoalFormState {
     }
 
     if (existingGoal != null && amount < existingGoal.savedAmount) {
-      return 'O novo valor não pode ser menor que o valor já economizado (R\$ ${existingGoal.savedAmount.toStringAsFixed(2)})';
+      return 'O novo valor não pode ser menor que o valor já economizado (${AppFormatters.currency(existingGoal.savedAmount)})';
     }
 
     if (deadline == null) {
@@ -202,8 +202,9 @@ class GoalFormNotifier extends StateNotifier<GoalFormState> {
       colorValue: state.colorValue,
       note: state.note?.trim().isEmpty == true ? null : state.note?.trim(),
       reminderTime: state.reminderTime,
-      createdAt: DateTime.now(),
+      createdAt: existingGoal?.createdAt ?? DateTime.now(),
       savedAmount: existingGoal?.savedAmount ?? 0.0,
+      isArchived: existingGoal?.isArchived ?? false,
     );
 
     await _repo.save(goal);
