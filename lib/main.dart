@@ -25,6 +25,7 @@ void main() async {
   await Hive.openBox<GoalModel>('goals');
   await Hive.openBox<DepositModel>('deposits');
   await Hive.openBox('gamification');
+  await Hive.openBox('wallet');
 
   await NotificationService().initialize();
 

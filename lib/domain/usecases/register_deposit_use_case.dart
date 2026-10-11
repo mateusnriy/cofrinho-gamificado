@@ -5,6 +5,7 @@ import '../../data/models/badge_model.dart';
 import '../../data/repositories/deposit_repository.dart';
 import '../../data/repositories/goal_repository.dart';
 import '../../data/repositories/gamification_repository.dart';
+import '../../data/repositories/wallet_repository.dart';
 import '../../core/utils/notification_service.dart';
 import 'evaluate_badges_use_case.dart';
 
@@ -19,6 +20,7 @@ class DepositResult {
   final bool newMilestoneReached;
   final int currentStreak;
   final List<BadgeDefinition> newBadges;
+  final bool dailyBonusEarned;
 
   const DepositResult({
     required this.goal,
@@ -31,6 +33,7 @@ class DepositResult {
     required this.newMilestoneReached,
     this.currentStreak = 1,
     this.newBadges = const [],
+    this.dailyBonusEarned = false,
   });
 }
 
@@ -38,14 +41,17 @@ class RegisterDepositUseCase {
   final GoalRepository _goalRepo;
   final DepositRepository _depositRepo;
   final GamificationRepository? _gamificationRepo;
+  final WalletRepository? _walletRepo;
 
   RegisterDepositUseCase({
     required GoalRepository goalRepo,
     required DepositRepository depositRepo,
     GamificationRepository? gamificationRepo,
+    WalletRepository? walletRepo,
   })  : _goalRepo = goalRepo,
         _depositRepo = depositRepo,
-        _gamificationRepo = gamificationRepo;
+        _gamificationRepo = gamificationRepo,
+        _walletRepo = walletRepo;
 
   Future<DepositResult?> execute({
     required String goalId,
@@ -92,7 +98,20 @@ class RegisterDepositUseCase {
 
     final updatedGoal = _goalRepo.getById(goalId) ?? goal;
     final milestonesAfter = updatedGoal.completedMilestonesCount;
-    final coinsEarned = amount.floor();
+
+    int coinsEarned = amount.floor();
+    bool dailyBonusEarned = false;
+
+    if (_walletRepo != null) {
+      try {
+        await _walletRepo!.addCoins(coinsEarned);
+        dailyBonusEarned =
+            await _walletRepo!.claimDailyBonusIfEligible(deposit.date);
+        if (dailyBonusEarned) {
+          coinsEarned += 50;
+        }
+      } catch (_) {}
+    }
 
     // Se a meta foi concluída com este depósito, cancela lembretes diários e celebra (AD-5)
     if (updatedGoal.isCompleted) {
@@ -120,6 +139,7 @@ class RegisterDepositUseCase {
       newMilestoneReached: milestonesAfter > milestonesBefore,
       currentStreak: currentStreak,
       newBadges: newBadges,
+      dailyBonusEarned: dailyBonusEarned,
     );
   }
 }

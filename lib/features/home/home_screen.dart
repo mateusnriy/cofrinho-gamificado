@@ -85,6 +85,7 @@ class HomeScreen extends ConsumerWidget {
     ref.watch(themeProvider);
     final streakData = ref.watch(streakProvider);
     final currentStreak = (streakData['currentStreak'] as int?) ?? 0;
+    final walletBalance = ref.watch(walletBalanceProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
@@ -115,6 +116,71 @@ class HomeScreen extends ConsumerWidget {
           ),
           Row(
             children: [
+              GestureDetector(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          const Text('🪙', style: TextStyle(fontSize: 18)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Saldo: $walletBalance Oinc Coins! Ganhe +1 por real poupado e +50 no 1º depósito do dia.',
+                            ),
+                          ),
+                        ],
+                      ),
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                  );
+                },
+                child: Tooltip(
+                  message: 'Saldo: $walletBalance Oinc Coins',
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color:
+                              const Color(0xFFF59E0B).withValues(alpha: 0.35),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          '🪙',
+                          style: TextStyle(fontSize: 13),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$walletBalance',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
               if (currentStreak > 0)
                 Tooltip(
                   message:
