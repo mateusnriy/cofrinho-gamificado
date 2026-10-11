@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/utils/formatters.dart';
 import '../../core/providers/theme_provider.dart';
+import '../../core/providers/global_providers.dart';
 import '../../data/models/goal_model.dart';
 import '../../data/repositories/goal_repository.dart';
 import '../../widgets/goal_card.dart';
@@ -79,8 +80,10 @@ class HomeScreen extends ConsumerWidget {
 
   Widget _buildCustomHeader(
       BuildContext context, WidgetRef ref, SortOrder sortOrder) {
-    // Escuta mudanças de tema para disparar rebuild reativo
+    // Escuta mudanças de tema e streak para disparar rebuild reativo
     ref.watch(themeProvider);
+    final streakData = ref.watch(streakProvider);
+    final currentStreak = (streakData['currentStreak'] as int?) ?? 0;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
@@ -111,6 +114,50 @@ class HomeScreen extends ConsumerWidget {
           ),
           Row(
             children: [
+              if (currentStreak > 0)
+                Tooltip(
+                  message:
+                      'Sequência de $currentStreak ${currentStreak == 1 ? 'dia' : 'dias'} consecutivos!',
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFF97316), Color(0xFFEF4444)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color:
+                              const Color(0xFFF97316).withValues(alpha: 0.35),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          '🔥',
+                          style: TextStyle(fontSize: 13),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$currentStreak ${currentStreak == 1 ? 'dia' : 'dias'}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               Container(
                 margin: const EdgeInsets.only(right: 12),
                 decoration: BoxDecoration(
