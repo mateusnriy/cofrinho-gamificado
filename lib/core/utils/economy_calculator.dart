@@ -41,9 +41,9 @@ class EconomyCalculator {
     final monthsLeft =
         (daysLeft / 30).ceilToDouble().clamp(1.0, double.infinity);
 
-    final daily = remaining / daysLeft;
-    final weekly = remaining / weeksLeft;
-    final monthly = remaining / monthsLeft;
+    final daily = ((remaining / daysLeft) * 100).ceilToDouble() / 100;
+    final weekly = ((remaining / weeksLeft) * 100).ceilToDouble() / 100;
+    final monthly = ((remaining / monthsLeft) * 100).ceilToDouble() / 100;
 
     return [
       EconomyModality(
