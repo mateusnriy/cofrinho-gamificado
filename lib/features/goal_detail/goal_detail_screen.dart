@@ -9,6 +9,7 @@ import '../../data/models/deposit_model.dart';
 import '../../core/providers/global_providers.dart';
 import '../../widgets/celebration_overlay.dart';
 import '../../widgets/economy_suggestions_card.dart';
+import '../../widgets/milestone_map_card.dart';
 import '../../core/utils/notification_service.dart';
 import '../deposit/deposit_screen.dart';
 import '../goal_form/goal_form_screen.dart';
@@ -80,6 +81,8 @@ class GoalDetailScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _ProgressCard(goal: goal, goalColor: goalColor),
+            const SizedBox(height: 16),
+            MilestoneMapCard(goal: goal, goalColor: goalColor),
             const SizedBox(height: 16),
             if (!goal.isCompleted) ...[
               EconomySuggestionsCard(modalities: modalities),
