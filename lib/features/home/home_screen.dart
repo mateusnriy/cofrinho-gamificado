@@ -147,19 +147,98 @@ class HomeScreen extends ConsumerWidget {
                 child: PopupMenuButton<SortOrder>(
                   icon: Icon(Icons.tune_rounded,
                       color: Theme.of(context).textTheme.bodyLarge?.color),
-                  tooltip: 'Filtrar',
+                  tooltip: 'Ordenar metas',
                   initialValue: sortOrder,
                   onSelected: (order) =>
-                      ref.read(sortOrderProvider.notifier).state = order,
-                  itemBuilder: (_) => const [
+                      ref.read(sortOrderProvider.notifier).setOrder(order),
+                  itemBuilder: (_) => [
                     PopupMenuItem(
-                        value: SortOrder.createdAt,
-                        child: Text('Mais recentes')),
+                      value: SortOrder.createdAt,
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.schedule_rounded,
+                            size: 18,
+                            color: sortOrder == SortOrder.createdAt
+                                ? Theme.of(context).colorScheme.primary
+                                : Colors.grey,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Mais recentes',
+                              style: TextStyle(
+                                fontWeight: sortOrder == SortOrder.createdAt
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                          if (sortOrder == SortOrder.createdAt)
+                            Icon(Icons.check_rounded,
+                                size: 18,
+                                color: Theme.of(context).colorScheme.primary),
+                        ],
+                      ),
+                    ),
                     PopupMenuItem(
-                        value: SortOrder.deadline, child: Text('Por prazo')),
+                      value: SortOrder.deadline,
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.event_rounded,
+                            size: 18,
+                            color: sortOrder == SortOrder.deadline
+                                ? Theme.of(context).colorScheme.primary
+                                : Colors.grey,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Por prazo',
+                              style: TextStyle(
+                                fontWeight: sortOrder == SortOrder.deadline
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                          if (sortOrder == SortOrder.deadline)
+                            Icon(Icons.check_rounded,
+                                size: 18,
+                                color: Theme.of(context).colorScheme.primary),
+                        ],
+                      ),
+                    ),
                     PopupMenuItem(
-                        value: SortOrder.progress,
-                        child: Text('Por progresso')),
+                      value: SortOrder.progress,
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.trending_up_rounded,
+                            size: 18,
+                            color: sortOrder == SortOrder.progress
+                                ? Theme.of(context).colorScheme.primary
+                                : Colors.grey,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Por progresso',
+                              style: TextStyle(
+                                fontWeight: sortOrder == SortOrder.progress
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                          if (sortOrder == SortOrder.progress)
+                            Icon(Icons.check_rounded,
+                                size: 18,
+                                color: Theme.of(context).colorScheme.primary),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
