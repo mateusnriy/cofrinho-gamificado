@@ -11,6 +11,7 @@ import '../goal_form/goal_form_screen.dart';
 import '../goal_detail/goal_detail_screen.dart';
 import '../deposit/deposit_screen.dart';
 import '../gamification/badges_gallery_screen.dart';
+import '../shop/porko_store_screen.dart';
 import '../../widgets/porko_canvas_widget.dart';
 import 'home_provider.dart';
 
@@ -258,6 +259,32 @@ class HomeScreen extends ConsumerWidget {
                     ),
                   ),
                   tooltip: 'Galeria de Conquistas',
+                ),
+              ),
+              Container(
+                margin: const EdgeInsets.only(right: 12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardTheme.color,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                    )
+                  ],
+                ),
+                child: IconButton(
+                  icon: const Icon(
+                    Icons.storefront_rounded,
+                    color: Color(0xFFEC4899),
+                  ),
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const PorkoStoreScreen(),
+                    ),
+                  ),
+                  tooltip: 'Porko Store',
                 ),
               ),
               Container(

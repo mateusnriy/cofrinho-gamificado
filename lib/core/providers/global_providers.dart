@@ -106,6 +106,12 @@ final equippedMascotProvider = Provider<MascotModel>((ref) {
   return repo.getMascot();
 });
 
+final mascotInventoryProvider = Provider<List<String>>((ref) {
+  final repo = ref.watch(mascotRepositoryProvider);
+  ref.watch(mascotBoxChangesProvider);
+  return repo.getUnlockedItemIds();
+});
+
 final porkoMoodProvider = Provider<PorkoMood>((ref) {
   final goalRepo = ref.watch(goalRepositoryProvider);
   ref.watch(goalBoxChangesProvider);
