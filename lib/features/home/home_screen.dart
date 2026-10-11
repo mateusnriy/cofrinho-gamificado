@@ -11,6 +11,7 @@ import '../goal_form/goal_form_screen.dart';
 import '../goal_detail/goal_detail_screen.dart';
 import '../deposit/deposit_screen.dart';
 import '../gamification/badges_gallery_screen.dart';
+import '../../widgets/porko_canvas_widget.dart';
 import 'home_provider.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -21,6 +22,8 @@ class HomeScreen extends ConsumerWidget {
     final goals = ref.watch(homeGoalsProvider);
     final stats = ref.watch(goalStatsProvider);
     final sortOrder = ref.watch(sortOrderProvider);
+    final porkoMood = ref.watch(porkoMoodProvider);
+    final equippedMascot = ref.watch(equippedMascotProvider);
 
     return Scaffold(
       body: goals.isEmpty
@@ -39,6 +42,12 @@ class HomeScreen extends ConsumerWidget {
                       ),
                       SliverToBoxAdapter(
                         child: _PremiumSummaryBanner(stats: stats),
+                      ),
+                      SliverToBoxAdapter(
+                        child: PorkoCanvasWidget(
+                          mood: porkoMood,
+                          mascot: equippedMascot,
+                        ),
                       ),
                       SliverPadding(
                         padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
@@ -410,6 +419,9 @@ class HomeScreen extends ConsumerWidget {
 
   Widget _buildEmptyState(
       BuildContext context, WidgetRef ref, SortOrder sortOrder) {
+    final porkoMood = ref.watch(porkoMoodProvider);
+    final equippedMascot = ref.watch(equippedMascotProvider);
+
     return SafeArea(
       child: Center(
         child: ConstrainedBox(
@@ -420,24 +432,16 @@ class HomeScreen extends ConsumerWidget {
               Expanded(
                 child: Center(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(40),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 24),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .primary
-                                .withValues(alpha: 0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(Icons.savings_rounded,
-                              size: 80,
-                              color: Theme.of(context).colorScheme.primary),
+                        PorkoCanvasWidget(
+                          mood: porkoMood,
+                          mascot: equippedMascot,
                         ),
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 24),
                         Text(
                           'Comece a poupar hoje',
                           textAlign: TextAlign.center,

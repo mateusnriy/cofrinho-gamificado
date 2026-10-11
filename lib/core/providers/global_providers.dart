@@ -1,9 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/badge_model.dart';
+import '../../data/models/mascot_model.dart';
 import '../../data/repositories/goal_repository.dart';
 import '../../data/repositories/deposit_repository.dart';
 import '../../data/repositories/gamification_repository.dart';
 import '../../data/repositories/wallet_repository.dart';
+import '../../data/repositories/mascot_repository.dart';
 import '../../domain/usecases/register_deposit_use_case.dart';
 import '../../domain/usecases/evaluate_badges_use_case.dart';
 
@@ -21,6 +23,10 @@ final gamificationRepositoryProvider = Provider<GamificationRepository>((ref) {
 
 final walletRepositoryProvider = Provider<WalletRepository>((ref) {
   return WalletRepository();
+});
+
+final mascotRepositoryProvider = Provider<MascotRepository>((ref) {
+  return MascotRepository();
 });
 
 final goalBoxChangesProvider = StreamProvider<void>((ref) {
@@ -87,4 +93,46 @@ final badgesProvider = Provider<List<UserBadge>>((ref) {
   final repo = ref.watch(gamificationRepositoryProvider);
   ref.watch(gamificationBoxChangesProvider);
   return repo.getAllUserBadges();
+});
+
+final mascotBoxChangesProvider = StreamProvider<void>((ref) {
+  final repo = ref.watch(mascotRepositoryProvider);
+  return repo.watchAll.map((_) {});
+});
+
+final equippedMascotProvider = Provider<MascotModel>((ref) {
+  final repo = ref.watch(mascotRepositoryProvider);
+  ref.watch(mascotBoxChangesProvider);
+  return repo.getMascot();
+});
+
+final porkoMoodProvider = Provider<PorkoMood>((ref) {
+  final goalRepo = ref.watch(goalRepositoryProvider);
+  ref.watch(goalBoxChangesProvider);
+  final goals = goalRepo.getAll().where((g) => !g.isArchived).toList();
+
+  if (goals.isEmpty) {
+    return PorkoMood.sleeping;
+  }
+
+  final streakData = ref.watch(streakProvider);
+  final currentStreak = (streakData['currentStreak'] as int?) ?? 0;
+  final lastDate = streakData['lastDepositDate'] as DateTime?;
+
+  final hasCompleted = goals.any((g) => g.isCompleted);
+  if (hasCompleted || currentStreak >= 7) {
+    return PorkoMood.celebrating;
+  }
+
+  final now = DateTime.now();
+  final depositedToday = lastDate != null &&
+      lastDate.year == now.year &&
+      lastDate.month == now.month &&
+      lastDate.day == now.day;
+
+  if (currentStreak >= 3 || depositedToday) {
+    return PorkoMood.happy;
+  }
+
+  return PorkoMood.neutral;
 });
