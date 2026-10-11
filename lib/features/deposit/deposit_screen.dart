@@ -352,29 +352,29 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
       _isLoading = true;
     });
 
-    final deposit = DepositModel(
-      id: const Uuid().v4(),
+    final useCase = ref.read(registerDepositUseCaseProvider);
+    final result = await useCase.execute(
       goalId: widget.goal.id,
       amount: amount,
-      date: DateTime.now(),
-      note: _noteController.text.trim().isEmpty
-          ? null
-          : _noteController.text.trim(),
+      note: _noteController.text,
     );
-
-    final depositRepo = ref.read(depositRepositoryProvider);
-    final goalRepo = ref.read(goalRepositoryProvider);
-
-    await depositRepo.save(deposit);
-    await goalRepo.addDeposit(widget.goal.id, amount);
 
     setState(() => _isLoading = false);
 
-    if (mounted) {
+    if (result != null && mounted) {
+      if (result.newMilestoneReached || result.isGoalCompleted) {
+        HapticFeedback.heavyImpact();
+      } else {
+        HapticFeedback.mediumImpact();
+      }
+
       Navigator.of(context).pop();
       widget.onDepositSaved?.call();
 
-      final coinsEarned = amount.floor();
+      final milestoneMessage = result.newMilestoneReached
+          ? ' 🎯 Novo marco de ${result.milestonesAfter * 25}% atingido!'
+          : '';
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -383,7 +383,7 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Depósito de ${AppFormatters.currency(amount)} registrado! 🪙 +$coinsEarned Oinc Coins!',
+                  'Depósito de ${AppFormatters.currency(amount)} registrado! 🪙 +${result.coinsEarned} Oinc Coins!$milestoneMessage',
                 ),
               ),
             ],
