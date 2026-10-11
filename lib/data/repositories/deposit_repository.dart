@@ -38,6 +38,9 @@ class DepositRepository {
     return monthly;
   }
 
+  /// Stream que notifica mudanças na box de depósitos (para reatividade imediata)
+  Stream<BoxEvent> get watchAll => _box.watch();
+
   // ── Escrita ───────────────────────────────────────────────────────────────
 
   /// Persiste um novo depósito

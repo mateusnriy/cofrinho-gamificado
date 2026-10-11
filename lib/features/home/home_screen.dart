@@ -3,12 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/utils/formatters.dart';
 import '../../core/providers/theme_provider.dart';
+import '../../core/providers/global_providers.dart';
 import '../../data/models/goal_model.dart';
 import '../../data/repositories/goal_repository.dart';
 import '../../widgets/goal_card.dart';
 import '../goal_form/goal_form_screen.dart';
 import '../goal_detail/goal_detail_screen.dart';
 import '../deposit/deposit_screen.dart';
+import '../gamification/badges_gallery_screen.dart';
+import '../shop/porko_store_screen.dart';
+import '../../widgets/porko_canvas_widget.dart';
 import 'home_provider.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -19,6 +23,8 @@ class HomeScreen extends ConsumerWidget {
     final goals = ref.watch(homeGoalsProvider);
     final stats = ref.watch(goalStatsProvider);
     final sortOrder = ref.watch(sortOrderProvider);
+    final porkoMood = ref.watch(porkoMoodProvider);
+    final equippedMascot = ref.watch(equippedMascotProvider);
 
     return Scaffold(
       body: goals.isEmpty
@@ -37,6 +43,12 @@ class HomeScreen extends ConsumerWidget {
                       ),
                       SliverToBoxAdapter(
                         child: _PremiumSummaryBanner(stats: stats),
+                      ),
+                      SliverToBoxAdapter(
+                        child: PorkoCanvasWidget(
+                          mood: porkoMood,
+                          mascot: equippedMascot,
+                        ),
                       ),
                       SliverPadding(
                         padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
@@ -79,7 +91,12 @@ class HomeScreen extends ConsumerWidget {
 
   Widget _buildCustomHeader(
       BuildContext context, WidgetRef ref, SortOrder sortOrder) {
-    final isDark = ref.watch(themeProvider) == ThemeMode.dark;
+    // Escuta mudanças de tema e streak para disparar rebuild reativo
+    ref.watch(themeProvider);
+    final streakData = ref.watch(streakProvider);
+    final currentStreak = (streakData['currentStreak'] as int?) ?? 0;
+    final walletBalance = ref.watch(walletBalanceProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 20, 20, 10),
@@ -109,6 +126,167 @@ class HomeScreen extends ConsumerWidget {
           ),
           Row(
             children: [
+              GestureDetector(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          const Text('🪙', style: TextStyle(fontSize: 18)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Saldo: $walletBalance Oinc Coins! Ganhe +1 por real poupado e +50 no 1º depósito do dia.',
+                            ),
+                          ),
+                        ],
+                      ),
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                  );
+                },
+                child: Tooltip(
+                  message: 'Saldo: $walletBalance Oinc Coins',
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color:
+                              const Color(0xFFF59E0B).withValues(alpha: 0.35),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          '🪙',
+                          style: TextStyle(fontSize: 13),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$walletBalance',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              if (currentStreak > 0)
+                Tooltip(
+                  message:
+                      'Sequência de $currentStreak ${currentStreak == 1 ? 'dia' : 'dias'} consecutivos!',
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFF97316), Color(0xFFEF4444)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color:
+                              const Color(0xFFF97316).withValues(alpha: 0.35),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          '🔥',
+                          style: TextStyle(fontSize: 13),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$currentStreak ${currentStreak == 1 ? 'dia' : 'dias'}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              Container(
+                margin: const EdgeInsets.only(right: 12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardTheme.color,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                    )
+                  ],
+                ),
+                child: IconButton(
+                  icon: const Icon(
+                    Icons.emoji_events_rounded,
+                    color: Color(0xFFF59E0B),
+                  ),
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const BadgesGalleryScreen(),
+                    ),
+                  ),
+                  tooltip: 'Galeria de Conquistas',
+                ),
+              ),
+              Container(
+                margin: const EdgeInsets.only(right: 12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardTheme.color,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                    )
+                  ],
+                ),
+                child: IconButton(
+                  icon: const Icon(
+                    Icons.storefront_rounded,
+                    color: Color(0xFFEC4899),
+                  ),
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const PorkoStoreScreen(),
+                    ),
+                  ),
+                  tooltip: 'Porko Store',
+                ),
+              ),
               Container(
                 margin: const EdgeInsets.only(right: 12),
                 decoration: BoxDecoration(
@@ -128,7 +306,7 @@ class HomeScreen extends ConsumerWidget {
                   ),
                   onPressed: () =>
                       ref.read(themeProvider.notifier).toggleTheme(),
-                  tooltip: 'Alternar Tema',
+                  tooltip: isDark ? 'Mudar para modo claro' : 'Mudar para modo escuro',
                 ),
               ),
               Container(
@@ -145,19 +323,98 @@ class HomeScreen extends ConsumerWidget {
                 child: PopupMenuButton<SortOrder>(
                   icon: Icon(Icons.tune_rounded,
                       color: Theme.of(context).textTheme.bodyLarge?.color),
-                  tooltip: 'Filtrar',
+                  tooltip: 'Ordenar metas',
                   initialValue: sortOrder,
                   onSelected: (order) =>
-                      ref.read(sortOrderProvider.notifier).state = order,
-                  itemBuilder: (_) => const [
+                      ref.read(sortOrderProvider.notifier).setOrder(order),
+                  itemBuilder: (_) => [
                     PopupMenuItem(
-                        value: SortOrder.createdAt,
-                        child: Text('Mais recentes')),
+                      value: SortOrder.createdAt,
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.schedule_rounded,
+                            size: 18,
+                            color: sortOrder == SortOrder.createdAt
+                                ? Theme.of(context).colorScheme.primary
+                                : Colors.grey,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Mais recentes',
+                              style: TextStyle(
+                                fontWeight: sortOrder == SortOrder.createdAt
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                          if (sortOrder == SortOrder.createdAt)
+                            Icon(Icons.check_rounded,
+                                size: 18,
+                                color: Theme.of(context).colorScheme.primary),
+                        ],
+                      ),
+                    ),
                     PopupMenuItem(
-                        value: SortOrder.deadline, child: Text('Por prazo')),
+                      value: SortOrder.deadline,
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.event_rounded,
+                            size: 18,
+                            color: sortOrder == SortOrder.deadline
+                                ? Theme.of(context).colorScheme.primary
+                                : Colors.grey,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Por prazo',
+                              style: TextStyle(
+                                fontWeight: sortOrder == SortOrder.deadline
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                          if (sortOrder == SortOrder.deadline)
+                            Icon(Icons.check_rounded,
+                                size: 18,
+                                color: Theme.of(context).colorScheme.primary),
+                        ],
+                      ),
+                    ),
                     PopupMenuItem(
-                        value: SortOrder.progress,
-                        child: Text('Por progresso')),
+                      value: SortOrder.progress,
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.trending_up_rounded,
+                            size: 18,
+                            color: sortOrder == SortOrder.progress
+                                ? Theme.of(context).colorScheme.primary
+                                : Colors.grey,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Por progresso',
+                              style: TextStyle(
+                                fontWeight: sortOrder == SortOrder.progress
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                          if (sortOrder == SortOrder.progress)
+                            Icon(Icons.check_rounded,
+                                size: 18,
+                                color: Theme.of(context).colorScheme.primary),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -189,6 +446,9 @@ class HomeScreen extends ConsumerWidget {
 
   Widget _buildEmptyState(
       BuildContext context, WidgetRef ref, SortOrder sortOrder) {
+    final porkoMood = ref.watch(porkoMoodProvider);
+    final equippedMascot = ref.watch(equippedMascotProvider);
+
     return SafeArea(
       child: Center(
         child: ConstrainedBox(
@@ -199,24 +459,16 @@ class HomeScreen extends ConsumerWidget {
               Expanded(
                 child: Center(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(40),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 24),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .primary
-                                .withValues(alpha: 0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(Icons.savings_rounded,
-                              size: 80,
-                              color: Theme.of(context).colorScheme.primary),
+                        PorkoCanvasWidget(
+                          mood: porkoMood,
+                          mascot: equippedMascot,
                         ),
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 24),
                         Text(
                           'Comece a poupar hoje',
                           textAlign: TextAlign.center,
@@ -263,6 +515,8 @@ class _PremiumSummaryBanner extends StatelessWidget {
     final totalSaved = (stats['totalSaved'] as double?) ?? 0;
     final totalTarget = (stats['totalTarget'] as double?) ?? 0;
     final overallProgress = (stats['overallProgress'] as double?) ?? 0;
+    final totalGoals = (stats['totalGoals'] as int?) ?? 0;
+    final completed = (stats['completed'] as int?) ?? 0;
 
     if (totalTarget == 0) return const SizedBox.shrink();
 
@@ -297,11 +551,12 @@ class _PremiumSummaryBanner extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Património Guardado',
+                'Patrimônio Guardado',
                 style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500),
+                  color: Colors.white70,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
               Container(
                 padding:
@@ -313,9 +568,10 @@ class _PremiumSummaryBanner extends StatelessWidget {
                 child: Text(
                   AppFormatters.percent(overallProgress * 100),
                   style: const TextStyle(
-                      color: Color(0xFF34D399),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13),
+                    color: Color(0xFF34D399),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
                 ),
               ),
             ],
@@ -330,30 +586,63 @@ class _PremiumSummaryBanner extends StatelessWidget {
               letterSpacing: -1,
             ),
           ),
-          const SizedBox(height: 24),
-          Text(
-            'De ${AppFormatters.currency(totalTarget)} em metas globais',
-            style: const TextStyle(color: Colors.white54, fontSize: 13),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'De ${AppFormatters.currency(totalTarget)} em $totalGoals meta${totalGoals != 1 ? 's' : ''}',
+                style: const TextStyle(color: Colors.white60, fontSize: 13),
+              ),
+              if (completed > 0)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10B981).withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.check_circle_rounded,
+                        size: 13,
+                        color: Color(0xFF34D399),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$completed concluída${completed != 1 ? 's' : ''}',
+                        style: const TextStyle(
+                          color: Color(0xFF34D399),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 12),
           Stack(
             children: [
               Container(
-                height: 6,
+                height: 8,
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(8),
                 ),
               ),
               LayoutBuilder(
                 builder: (context, constraints) {
                   return Container(
-                    height: 6,
+                    height: 8,
                     width:
                         constraints.maxWidth * overallProgress.clamp(0.0, 1.0),
                     decoration: BoxDecoration(
                       color: const Color(0xFF34D399),
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(8),
                       boxShadow: const [
                         BoxShadow(color: Color(0xFF34D399), blurRadius: 8),
                       ],

@@ -69,6 +69,24 @@ class GoalModel extends HiveObject {
   /// Meta foi atingida
   bool get isCompleted => savedAmount >= targetAmount;
 
+  /// 4 marcos automáticos de progresso (25%, 50%, 75%, 100%)
+  List<double> get milestoneAmounts => [
+        targetAmount * 0.25,
+        targetAmount * 0.50,
+        targetAmount * 0.75,
+        targetAmount * 1.00,
+      ];
+
+  /// Quantos marcos já foram conquistados (0 a 4)
+  int get completedMilestonesCount {
+    if (targetAmount <= 0) return 0;
+    int count = 0;
+    for (final milestone in milestoneAmounts) {
+      if (savedAmount >= milestone) count++;
+    }
+    return count;
+  }
+
   /// Cria uma cópia com campos alterados
   GoalModel copyWith({
     String? id,
