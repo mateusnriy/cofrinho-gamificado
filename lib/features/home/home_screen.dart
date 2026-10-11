@@ -79,7 +79,9 @@ class HomeScreen extends ConsumerWidget {
 
   Widget _buildCustomHeader(
       BuildContext context, WidgetRef ref, SortOrder sortOrder) {
-    final isDark = ref.watch(themeProvider) == ThemeMode.dark;
+    // Escuta mudanças de tema para disparar rebuild reativo
+    ref.watch(themeProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 20, 20, 10),
@@ -128,7 +130,7 @@ class HomeScreen extends ConsumerWidget {
                   ),
                   onPressed: () =>
                       ref.read(themeProvider.notifier).toggleTheme(),
-                  tooltip: 'Alternar Tema',
+                  tooltip: isDark ? 'Mudar para modo claro' : 'Mudar para modo escuro',
                 ),
               ),
               Container(

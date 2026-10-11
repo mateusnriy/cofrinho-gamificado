@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import '../home/home_screen.dart';
+import '../onboarding/onboarding_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -49,13 +51,21 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _initAndNavigate() async {
-    // Agora aguardamos apenas a animação, já que o Hive foi inicializado na main.dart
+    // Aguardamos a animação suave da splash
     await Future.delayed(const Duration(milliseconds: 1800));
 
     if (mounted) {
+      final settingsBox = Hive.box('settings');
+      final hasSeenOnboarding =
+          settingsBox.get('has_seen_onboarding', defaultValue: false) as bool;
+
+      final Widget nextScreen = hasSeenOnboarding
+          ? const HomeScreen()
+          : const OnboardingScreen();
+
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(
-          pageBuilder: (_, __, ___) => const HomeScreen(),
+          pageBuilder: (_, __, ___) => nextScreen,
           transitionsBuilder: (_, animation, __, child) {
             return FadeTransition(opacity: animation, child: child);
           },
