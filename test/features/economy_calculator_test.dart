@@ -151,6 +151,7 @@ void main() {
 
       // Avança para Passo 2
       final continueButton = find.text('Continuar para o Ritmo');
+      await tester.ensureVisible(continueButton);
       await tester.tap(continueButton);
       await tester.pumpAndSettle();
 

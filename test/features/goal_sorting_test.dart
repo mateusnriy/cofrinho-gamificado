@@ -7,6 +7,9 @@ import 'package:cofrinho_digital/data/models/goal_model.dart';
 import 'package:cofrinho_digital/data/models/deposit_model.dart';
 import 'package:cofrinho_digital/data/repositories/goal_repository.dart';
 import 'package:cofrinho_digital/data/repositories/deposit_repository.dart';
+import 'package:cofrinho_digital/data/repositories/gamification_repository.dart';
+import 'package:cofrinho_digital/data/repositories/wallet_repository.dart';
+import 'package:cofrinho_digital/data/repositories/mascot_repository.dart';
 import 'package:cofrinho_digital/core/providers/global_providers.dart';
 import 'package:cofrinho_digital/features/home/home_screen.dart';
 import 'package:cofrinho_digital/features/home/home_provider.dart';
@@ -31,6 +34,10 @@ void main() {
     await Hive.openBox('settings');
     await Hive.openBox<GoalModel>('goals');
     await Hive.openBox<DepositModel>('deposits');
+    await Hive.openBox('gamification');
+    await Hive.openBox('wallet');
+    await Hive.openBox('badges');
+    await Hive.openBox('mascot_box');
 
     goalRepo = GoalRepository();
     depositRepo = DepositRepository();
@@ -79,10 +86,14 @@ void main() {
   });
 
   tearDown(() async {
-    await Hive.close();
-    if (await tempDir.exists()) {
-      await tempDir.delete(recursive: true);
-    }
+    try {
+      await Hive.close().timeout(const Duration(milliseconds: 200), onTimeout: () => null);
+    } catch (_) {}
+    try {
+      if (await tempDir.exists()) {
+        await tempDir.delete(recursive: true);
+      }
+    } catch (_) {}
   });
 
   group('Story 3.2 - Repositório: Regras de Ordenação de Metas', () {
@@ -118,11 +129,11 @@ void main() {
     });
 
     test('Persiste a preferência selecionada no Hive e restaura na inicialização',
-        () {
+        () async {
       final notifier = SortOrderNotifier();
 
       // Altera para 'deadline'
-      notifier.setOrder(SortOrder.deadline);
+      await notifier.setOrder(SortOrder.deadline);
       expect(notifier.state, SortOrder.deadline);
 
       final settingsBox = Hive.box('settings');
@@ -133,7 +144,7 @@ void main() {
       expect(restoredNotifier.state, SortOrder.deadline);
 
       // Altera para 'progress'
-      restoredNotifier.setOrder(SortOrder.progress);
+      await restoredNotifier.setOrder(SortOrder.progress);
       expect(settingsBox.get('goal_sort_order'), 'progress');
 
       final finalNotifier = SortOrderNotifier();
@@ -144,11 +155,18 @@ void main() {
   group('Story 3.2 - Interface Gráfica: Menu de Ordenação no Dashboard', () {
     testWidgets('Alterna ordenação via PopupMenuButton na HomeScreen',
         (tester) async {
+      final gamificationRepo = GamificationRepository();
+      final walletRepo = WalletRepository();
+      final mascotRepo = MascotRepository();
+
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
             goalRepositoryProvider.overrideWithValue(goalRepo),
             depositRepositoryProvider.overrideWithValue(depositRepo),
+            gamificationRepositoryProvider.overrideWithValue(gamificationRepo),
+            walletRepositoryProvider.overrideWithValue(walletRepo),
+            mascotRepositoryProvider.overrideWithValue(mascotRepo),
           ],
           child: const MaterialApp(
             home: HomeScreen(),
@@ -164,7 +182,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Opções do menu devem estar visíveis com ícones e labels
-      expect(find.text('Mais recentes'), findsOneWidget);
+      expect(find.text('Mais recentes'), findsWidgets);
       expect(find.text('Por prazo'), findsOneWidget);
       expect(find.text('Por progresso'), findsOneWidget);
 

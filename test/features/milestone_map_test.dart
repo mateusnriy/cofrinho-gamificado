@@ -29,16 +29,22 @@ void main() {
     await Hive.openBox<GoalModel>('goals');
     await Hive.openBox<DepositModel>('deposits');
     await Hive.openBox('gamification');
+    await Hive.openBox('wallet');
+    await Hive.openBox('mascot_box');
 
     goalRepo = GoalRepository();
     depositRepo = DepositRepository();
   });
 
   tearDown(() async {
-    await Hive.close();
-    if (await tempDir.exists()) {
-      await tempDir.delete(recursive: true);
-    }
+    try {
+      await Hive.close().timeout(const Duration(milliseconds: 200), onTimeout: () => null);
+    } catch (_) {}
+    try {
+      if (await tempDir.exists()) {
+        await tempDir.delete(recursive: true);
+      }
+    } catch (_) {}
   });
 
   group('Story 4.2: MilestoneMapCard Tests', () {
@@ -204,7 +210,9 @@ void main() {
         createdAt: DateTime.now(),
       );
 
-      await goalRepo.create(goal);
+      await tester.runAsync(() async {
+        await goalRepo.create(goal);
+      });
 
       await tester.pumpWidget(
         ProviderScope(
@@ -224,6 +232,8 @@ void main() {
       expect(find.byType(MilestoneMapCard), findsOneWidget);
       expect(find.text('Trilha de Marcos'), findsOneWidget);
       expect(find.text('1 de 4 marcos conquistados'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
     });
   });
 }

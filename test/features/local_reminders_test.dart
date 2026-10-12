@@ -10,6 +10,7 @@ import 'package:cofrinho_digital/domain/usecases/register_deposit_use_case.dart'
 import 'package:cofrinho_digital/features/goal_form/goal_form_provider.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   late Directory tempDir;
   late GoalRepository goalRepo;
   late DepositRepository depositRepo;
@@ -37,10 +38,14 @@ void main() {
   });
 
   tearDown(() async {
-    await Hive.close();
-    if (await tempDir.exists()) {
-      await tempDir.delete(recursive: true);
-    }
+    try {
+      await Hive.close();
+    } catch (_) {}
+    try {
+      if (await tempDir.exists()) {
+        await tempDir.delete(recursive: true);
+      }
+    } catch (_) {}
   });
 
   group('Story 3.3 - Lembretes Locais e Ciclo de Vida', () {

@@ -34,6 +34,7 @@ void main() {
     await Hive.openBox<DepositModel>('deposits');
     await Hive.openBox('gamification');
     await Hive.openBox('wallet');
+    await Hive.openBox('mascot_box');
 
     goalRepo = GoalRepository();
     depositRepo = DepositRepository();
@@ -42,10 +43,14 @@ void main() {
   });
 
   tearDown(() async {
-    await Hive.close();
-    if (await tempDir.exists()) {
-      await tempDir.delete(recursive: true);
-    }
+    try {
+      await Hive.close().timeout(const Duration(milliseconds: 200), onTimeout: () => null);
+    } catch (_) {}
+    try {
+      if (await tempDir.exists()) {
+        await tempDir.delete(recursive: true);
+      }
+    } catch (_) {}
   });
 
   group('Story 5.1: WalletRepository - Unit Tests', () {
@@ -147,7 +152,9 @@ void main() {
   group('Story 5.1: HomeScreen - Widget Tests para Oinc Coins', () {
     testWidgets('Exibe pilula de saldo de Oinc Coins no cabecalho e responde ao toque',
         (tester) async {
-      await walletRepo.addCoins(135);
+      await tester.runAsync(() async {
+        await walletRepo.addCoins(135);
+      });
 
       await tester.pumpWidget(
         ProviderScope(

@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/providers/global_providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/economy_calculator.dart';
 import '../../core/utils/formatters.dart';
 import '../../data/models/goal_model.dart';
+import '../../widgets/celebration_overlay.dart';
 import '../../widgets/economy_suggestions_card.dart';
+import '../deposit/deposit_screen.dart';
 import 'goal_form_provider.dart';
 
 class GoalFormScreen extends ConsumerStatefulWidget {
@@ -22,6 +25,8 @@ class _GoalFormScreenState extends ConsumerState<GoalFormScreen> {
   final _nameController = TextEditingController();
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
+  bool _created = false;
+  GoalModel? _savedGoal;
 
   @override
   void initState() {
@@ -95,9 +100,11 @@ class _GoalFormScreenState extends ConsumerState<GoalFormScreen> {
                           ),
                         );
                       },
-                      child: formState.currentStep == 0
-                          ? _buildStep1(context, formState, isEditing)
-                          : _buildStep2(context, formState, isEditing),
+                      child: _created
+                          ? _buildStep3(context, _savedGoal)
+                          : (formState.currentStep == 0
+                              ? _buildStep1(context, formState, isEditing)
+                              : _buildStep2(context, formState, isEditing)),
                     ),
                   ),
                 ),
@@ -242,12 +249,16 @@ class _GoalFormScreenState extends ConsumerState<GoalFormScreen> {
           onChanged: (v) => ref.read(goalFormProvider.notifier).setAmount(v),
         ),
         const SizedBox(height: 20),
-        _buildLabel(context, 'Data limite (Prazo) *'),
+        _buildLabel(context, 'Data limite (Prazo) (opcional)'),
         const SizedBox(height: 8),
         _DeadlinePicker(
           selected: formState.deadline,
           onChanged: (date) {
-            ref.read(goalFormProvider.notifier).setDeadline(date);
+            if (date != null) {
+              ref.read(goalFormProvider.notifier).setDeadline(date);
+            } else {
+              ref.read(goalFormProvider.notifier).setDeadlineNull();
+            }
           },
         ),
         if (formState.errorMessage != null) ...[
@@ -467,22 +478,168 @@ class _GoalFormScreenState extends ConsumerState<GoalFormScreen> {
 
   Future<void> _save() async {
     FocusScope.of(context).unfocus();
+    final repo = ref.read(goalRepositoryProvider);
     final success = await ref.read(goalFormProvider.notifier).save(
           existingId: widget.existingGoal?.id,
         );
     if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            widget.existingGoal != null
-                ? 'Meta atualizada com sucesso!'
-                : 'Meta criada com sucesso! 4 marcos gerados.',
+      if (widget.existingGoal != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Meta atualizada com sucesso!'),
+            behavior: SnackBarBehavior.floating,
           ),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      Navigator.of(context).pop();
+        );
+        Navigator.of(context).pop();
+      } else {
+        HapticFeedback.heavyImpact();
+        final allGoals = repo.getActive();
+        final created = allGoals.isNotEmpty ? allGoals.last : null;
+        setState(() {
+          _created = true;
+          _savedGoal = created;
+        });
+        if (created != null) {
+          CelebrationOverlay.show(context, created.name);
+        }
+      }
     }
+  }
+
+  // ── Passo 3: Celebração, Resumo e Primeiro Depósito ──────────────────────
+  Widget _buildStep3(BuildContext context, GoalModel? goal) {
+    return Column(
+      key: const ValueKey('step_3'),
+      children: [
+        const SizedBox(height: 16),
+        const Text('🐷', style: TextStyle(fontSize: 64)),
+        const SizedBox(height: 16),
+        const Text(
+          'Meta criada! 🎉',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontFamily: 'Poppins',
+            fontSize: 24,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'O Porko já está torcendo por você. Que tal a primeira moedinha?',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontFamily: 'Nunito',
+            fontSize: 14,
+            color: Theme.of(context).textTheme.bodySmall?.color,
+          ),
+        ),
+        const SizedBox(height: 24),
+        if (goal != null)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardTheme.color,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Color(goal.colorValue).withValues(alpha: 0.35),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: Color(goal.colorValue).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    IconData(goal.iconCodePoint, fontFamily: 'MaterialIcons'),
+                    color: Color(goal.colorValue),
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        goal.name,
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                      Text(
+                        AppFormatters.currency(goal.targetAmount),
+                        style: const TextStyle(
+                          fontFamily: 'Nunito',
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        const SizedBox(height: 28),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: () {
+              if (goal != null) {
+                Navigator.of(context).pop();
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (_) => DepositScreen(goal: goal),
+                );
+              } else {
+                Navigator.of(context).pop();
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: goal != null ? Color(goal.colorValue) : const Color(0xFF2E7D32),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
+            child: const Text(
+              '🪙 Fazer o 1º depósito',
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton(
+            onPressed: () => Navigator.of(context).pop(),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
+            child: const Text(
+              'Ver minhas metas',
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -672,79 +829,78 @@ class _IconColorPicker extends ConsumerWidget {
 
 class _DeadlinePicker extends StatelessWidget {
   final DateTime? selected;
-  final ValueChanged<DateTime> onChanged;
+  final ValueChanged<DateTime?> onChanged;
 
   const _DeadlinePicker({required this.selected, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () async {
-        final tomorrow = DateTime.now().add(const Duration(days: 1));
-        final picked = await showDatePicker(
-          context: context,
-          initialDate: (selected != null && selected!.isAfter(tomorrow))
-              ? selected!
-              : tomorrow.add(const Duration(days: 30)),
-          firstDate: tomorrow,
-          lastDate: DateTime.now().add(const Duration(days: 3650)),
-          locale: const Locale('pt', 'BR'),
-          builder: (context, child) => Theme(
-            data: Theme.of(context).copyWith(
-              colorScheme: Theme.of(context)
-                  .colorScheme
-                  .copyWith(primary: Theme.of(context).colorScheme.primary),
-            ),
-            child: child!,
-          ),
-        );
-        if (picked != null) onChanged(picked);
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: Theme.of(context).inputDecorationTheme.fillColor,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: selected != null
-                ? Theme.of(context).colorScheme.primary
-                : Theme.of(context).disabledColor.withValues(alpha: 0.2),
-            width: selected != null ? 2 : 1,
-          ),
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).inputDecorationTheme.fillColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: selected != null
+              ? Theme.of(context).colorScheme.primary
+              : Theme.of(context).disabledColor.withValues(alpha: 0.2),
+          width: selected != null ? 2 : 1,
         ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.calendar_today_rounded,
-              color: selected != null
-                  ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).disabledColor,
-              size: 20,
-            ),
-            const SizedBox(width: 12),
-            Text(
-              selected != null
-                  ? AppFormatters.date(selected!)
-                  : 'Selecione uma data futura',
-              style: TextStyle(
-                fontSize: 16,
-                color: selected != null
-                    ? Theme.of(context).textTheme.bodyLarge?.color
-                    : Theme.of(context).disabledColor,
-              ),
-            ),
-            const Spacer(),
-            if (selected != null)
-              Text(
-                AppFormatters.daysRemaining(selected!),
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: InkWell(
+              onTap: () async {
+                final tomorrow = DateTime.now().add(const Duration(days: 1));
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: (selected != null && selected!.isAfter(tomorrow))
+                      ? selected!
+                      : tomorrow.add(const Duration(days: 30)),
+                  firstDate: tomorrow,
+                  lastDate: DateTime.now().add(const Duration(days: 3650)),
+                  locale: const Locale('pt', 'BR'),
+                );
+                if (picked != null) onChanged(picked);
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today_rounded,
+                      color: selected != null
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).disabledColor,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      selected != null
+                          ? AppFormatters.date(selected!)
+                          : 'Sem prazo fixo (No meu ritmo)',
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: selected != null
+                            ? Theme.of(context).textTheme.bodyLarge?.color
+                            : Theme.of(context).disabledColor,
+                        fontWeight:
+                            selected != null ? FontWeight.w600 : FontWeight.normal,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-          ],
-        ),
+            ),
+          ),
+          if (selected != null)
+            IconButton(
+              icon: const Icon(Icons.close_rounded, size: 20),
+              tooltip: 'Remover prazo (ritmo livre)',
+              onPressed: () => onChanged(null),
+            ),
+        ],
       ),
     );
   }

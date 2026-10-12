@@ -8,7 +8,7 @@ class GoalRepository {
 
   // ── Leitura ──────────────────────────────────────────────────────────────
 
-  /// Retorna todas as metas ativas (não arquivadas), ordenadas conforme critério
+  // Pega todas as metas ativas organizadas pela ordem escolhida
   List<GoalModel> getActive({SortOrder order = SortOrder.createdAt}) {
     final goals = _box.values
         .where((g) => !g.isArchived)
@@ -16,7 +16,12 @@ class GoalRepository {
 
     switch (order) {
       case SortOrder.deadline:
-        goals.sort((a, b) => a.deadline.compareTo(b.deadline));
+        goals.sort((a, b) {
+          if (a.deadline == null && b.deadline == null) return 0;
+          if (a.deadline == null) return 1;
+          if (b.deadline == null) return -1;
+          return a.deadline!.compareTo(b.deadline!);
+        });
       case SortOrder.progress:
         goals.sort((a, b) => b.progress.compareTo(a.progress));
       case SortOrder.createdAt:
@@ -26,6 +31,9 @@ class GoalRepository {
     return goals;
   }
 
+  /// Retorna todas as metas (ativas e arquivadas)
+  List<GoalModel> getAll() => _box.values.toList();
+
   /// Retorna metas arquivadas
   List<GoalModel> getArchived() {
     return _box.values.where((g) => g.isArchived).toList()
@@ -34,6 +42,8 @@ class GoalRepository {
 
   /// Busca meta por ID. Retorna null se não encontrar.
   GoalModel? getById(String id) {
+    final direct = _box.get(id);
+    if (direct != null) return direct;
     try {
       return _box.values.firstWhere((g) => g.id == id);
     } catch (_) {
@@ -51,18 +61,32 @@ class GoalRepository {
     await _box.put(goal.id, goal);
   }
 
+  /// Alias para criar uma nova meta
+  Future<void> create(GoalModel goal) => save(goal);
+
   /// Atualiza uma meta existente
   Future<void> update(GoalModel goal) async {
     await _box.put(goal.id, goal);
   }
 
-  /// Adiciona valor ao savedAmount e persiste
+  // Adiciona o valor do depósito na meta e salva no banco
   Future<void> addDeposit(String goalId, double amount) async {
     final goal = getById(goalId);
     if (goal == null) return;
 
     final updated = goal.copyWith(
       savedAmount: goal.savedAmount + amount,
+    );
+    await _box.put(goalId, updated);
+  }
+
+  // Remove o valor do depósito estornado na meta
+  Future<void> removeDeposit(String goalId, double amount) async {
+    final goal = getById(goalId);
+    if (goal == null) return;
+
+    final updated = goal.copyWith(
+      savedAmount: (goal.savedAmount - amount).clamp(0.0, double.infinity),
     );
     await _box.put(goalId, updated);
   }

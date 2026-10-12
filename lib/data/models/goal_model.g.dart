@@ -20,7 +20,7 @@ class GoalModelAdapter extends TypeAdapter<GoalModel> {
       id: fields[0] as String,
       name: fields[1] as String,
       targetAmount: fields[2] as double,
-      deadline: fields[3] as DateTime,
+      deadline: fields[3] as DateTime?,
       savedAmount: fields[4] as double,
       iconCodePoint: fields[5] as int,
       colorValue: fields[6] as int,
@@ -28,13 +28,14 @@ class GoalModelAdapter extends TypeAdapter<GoalModel> {
       createdAt: fields[8] as DateTime,
       reminderTime: fields[9] as String?,
       note: fields[10] as String?,
+      rhythm: fields[11] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, GoalModel obj) {
     writer
-      ..writeByte(11)
+      ..writeByte(12)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -56,7 +57,9 @@ class GoalModelAdapter extends TypeAdapter<GoalModel> {
       ..writeByte(9)
       ..write(obj.reminderTime)
       ..writeByte(10)
-      ..write(obj.note);
+      ..write(obj.note)
+      ..writeByte(11)
+      ..write(obj.rhythm);
   }
 
   @override

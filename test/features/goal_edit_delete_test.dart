@@ -9,7 +9,6 @@ import 'package:cofrinho_digital/data/repositories/goal_repository.dart';
 import 'package:cofrinho_digital/data/repositories/deposit_repository.dart';
 import 'package:cofrinho_digital/core/providers/global_providers.dart';
 import 'package:cofrinho_digital/features/goal_form/goal_form_provider.dart';
-import 'package:cofrinho_digital/features/goal_form/goal_form_screen.dart';
 import 'package:cofrinho_digital/features/goal_detail/goal_detail_screen.dart';
 
 void main() {
@@ -30,6 +29,9 @@ void main() {
     await Hive.openBox('settings');
     await Hive.openBox<GoalModel>('goals');
     await Hive.openBox<DepositModel>('deposits');
+    await Hive.openBox('gamification');
+    await Hive.openBox('wallet');
+    await Hive.openBox('mascot_box');
 
     goalRepo = GoalRepository();
     depositRepo = DepositRepository();
@@ -70,10 +72,14 @@ void main() {
   });
 
   tearDown(() async {
-    await Hive.close();
-    if (await tempDir.exists()) {
-      await tempDir.delete(recursive: true);
-    }
+    try {
+      await Hive.close().timeout(const Duration(milliseconds: 200), onTimeout: () => null);
+    } catch (_) {}
+    try {
+      if (await tempDir.exists()) {
+        await tempDir.delete(recursive: true);
+      }
+    } catch (_) {}
   });
 
   group('Story 2.4 - Validações de Edição de Metas', () {
@@ -185,6 +191,8 @@ void main() {
       // Meta ainda existe no repositório
       expect(goalRepo.getById(initialGoal.id), isNotNull);
       expect(depositRepo.getByGoal(initialGoal.id).length, 2);
+
+      await tester.pumpWidget(const SizedBox());
     });
 
     testWidgets('Diálogo de exclusão confirmada apaga meta e depósitos',
@@ -213,10 +221,16 @@ void main() {
       // Clica em Excluir
       await tester.tap(find.text('Excluir'));
       await tester.pumpAndSettle();
+      await tester.runAsync(() async {
+        await Future.delayed(const Duration(milliseconds: 100));
+      });
+      await tester.pumpAndSettle();
 
       // Meta e depósitos foram removidos do repositório
       expect(goalRepo.getById(initialGoal.id), isNull);
       expect(depositRepo.getByGoal(initialGoal.id).length, 0);
+
+      await tester.pumpWidget(const SizedBox());
     });
   });
 }

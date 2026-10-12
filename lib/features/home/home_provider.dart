@@ -32,13 +32,13 @@ class SortOrderNotifier extends StateNotifier<SortOrder> {
     }
   }
 
-  void setOrder(SortOrder order) {
+  Future<void> setOrder(SortOrder order) async {
     HapticFeedback.lightImpact();
     state = order;
     try {
       if (Hive.isBoxOpen(_boxName)) {
         final box = Hive.box(_boxName);
-        box.put(_sortOrderKey, order.name);
+        await box.put(_sortOrderKey, order.name);
       }
     } catch (_) {}
   }

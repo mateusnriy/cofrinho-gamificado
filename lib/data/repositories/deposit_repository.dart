@@ -8,6 +8,9 @@ class DepositRepository {
 
   // ── Leitura ──────────────────────────────────────────────────────────────
 
+  /// Retorna todos os depósitos
+  List<DepositModel> getAll() => _box.values.toList();
+
   /// Retorna todos os depósitos de uma meta, do mais recente ao mais antigo
   List<DepositModel> getByGoal(String goalId) {
     return _box.values

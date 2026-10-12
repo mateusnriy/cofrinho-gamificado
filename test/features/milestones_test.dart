@@ -1,11 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:cofrinho_digital/data/models/goal_model.dart';
 import 'package:cofrinho_digital/data/models/deposit_model.dart';
-import 'package:cofrinho_digital/data/repositories/goal_repository.dart';
 import 'package:cofrinho_digital/widgets/goal_card.dart';
 
 void main() {

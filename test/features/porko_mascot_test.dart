@@ -168,7 +168,7 @@ void main() {
   });
 
   group('Story 5.2: PorkoCanvasWidget - Widget Tests', () {
-    testWidgets('Renderiza balao de fala, mascote e pilula de humor',
+    testWidgets('Renderiza mascote e responde ao toque',
         (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
@@ -182,8 +182,6 @@ void main() {
       );
 
       expect(find.byType(PorkoCanvasWidget), findsOneWidget);
-      expect(find.textContaining('Porko • Animado!'), findsOneWidget);
-      expect(find.textContaining('🔥'), findsOneWidget);
 
       // Toca no mascote para disparar micro-animação
       await tester.tap(find.byType(GestureDetector).first);
@@ -213,10 +211,10 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // No estado vazio, o Porko sonolento deve estar visível
+      // No estado vazio, o Porko e o convite de criar primeira meta devem estar visíveis
       expect(find.byType(PorkoCanvasWidget), findsOneWidget);
-      expect(find.textContaining('Porko • Sonolento'), findsOneWidget);
-      expect(find.textContaining('Zzz...'), findsOneWidget);
+      expect(find.text('Comece a poupar hoje'), findsOneWidget);
+      expect(find.text('Criar primeira meta'), findsOneWidget);
     });
   });
 }

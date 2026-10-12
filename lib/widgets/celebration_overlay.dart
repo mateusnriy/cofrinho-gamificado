@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -33,10 +34,12 @@ class CelebrationOverlay extends StatefulWidget {
   static void showGoalCompleted(
     BuildContext context, {
     required String goalName,
+    OverlayState? overlayState,
     VoidCallback? onDismiss,
   }) {
     _insertOverlay(
       context,
+      overlayState: overlayState,
       title: 'Meta Atingida!',
       subtitle: 'Parabéns! Você concluiu a meta\n"$goalName"',
       emoji: '🏆',
@@ -50,10 +53,12 @@ class CelebrationOverlay extends StatefulWidget {
     BuildContext context, {
     required String goalName,
     required int milestonePercent,
+    OverlayState? overlayState,
     VoidCallback? onDismiss,
   }) {
     _insertOverlay(
       context,
+      overlayState: overlayState,
       title: 'Novo Marco Conquistado!',
       subtitle: 'Você atingiu o marco de $milestonePercent% da meta\n"$goalName"',
       emoji: '🎯',
@@ -66,10 +71,12 @@ class CelebrationOverlay extends StatefulWidget {
   static void showBadgeUnlocked(
     BuildContext context, {
     required String badgeTitle,
+    OverlayState? overlayState,
     VoidCallback? onDismiss,
   }) {
     _insertOverlay(
       context,
+      overlayState: overlayState,
       title: 'Conquista Desbloqueada!',
       subtitle: 'Você desbloqueou o emblema lendário\n"$badgeTitle"',
       emoji: '🏅',
@@ -80,13 +87,16 @@ class CelebrationOverlay extends StatefulWidget {
 
   static void _insertOverlay(
     BuildContext context, {
+    OverlayState? overlayState,
     required String title,
     required String subtitle,
     required String emoji,
     required Color accentColor,
     VoidCallback? onDismiss,
   }) {
-    final overlay = Overlay.maybeOf(context);
+    final overlay = overlayState ??
+        Overlay.maybeOf(context) ??
+        Navigator.maybeOf(context)?.overlay;
     if (overlay == null) return;
 
     late OverlayEntry entry;
@@ -163,21 +173,27 @@ class _CelebrationOverlayState extends State<CelebrationOverlay>
     _confettiController.forward();
 
     // Auto-dismiss em 2.2 segundos para garantir o fade completo
-    Future.delayed(const Duration(milliseconds: 2200), () {
+    _autoDismissTimer = Timer(const Duration(milliseconds: 2200), () {
       if (mounted) _dismiss();
     });
   }
 
+  Timer? _autoDismissTimer;
+
   void _dismiss() {
+    _autoDismissTimer?.cancel();
     if (_isDismissed) return;
     _isDismissed = true;
     _bgController.reverse().then((_) {
-      if (mounted) widget.onDismiss();
+      if (mounted) {
+        widget.onDismiss();
+      }
     });
   }
 
   @override
   void dispose() {
+    _autoDismissTimer?.cancel();
     _bgController.dispose();
     _contentController.dispose();
     _confettiController.dispose();

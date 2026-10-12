@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:cofrinho_digital/features/onboarding/onboarding_screen.dart';
+import 'package:cofrinho_digital/data/models/goal_model.dart';
+import 'package:cofrinho_digital/data/models/deposit_model.dart';
 
 void main() {
   late Directory tempDir;
@@ -11,14 +13,29 @@ void main() {
   setUp(() async {
     tempDir = await Directory.systemTemp.createTemp('onboarding_test_');
     Hive.init(tempDir.path);
+    if (!Hive.isAdapterRegistered(0)) {
+      Hive.registerAdapter(GoalModelAdapter());
+    }
+    if (!Hive.isAdapterRegistered(1)) {
+      Hive.registerAdapter(DepositModelAdapter());
+    }
     await Hive.openBox('settings');
+    await Hive.openBox<GoalModel>('goals');
+    await Hive.openBox<DepositModel>('deposits');
+    await Hive.openBox('gamification');
+    await Hive.openBox('wallet');
+    await Hive.openBox('mascot_box');
   });
 
   tearDown(() async {
-    await Hive.close();
-    if (await tempDir.exists()) {
-      await tempDir.delete(recursive: true);
-    }
+    try {
+      await Hive.close().timeout(const Duration(milliseconds: 200), onTimeout: () => null);
+    } catch (_) {}
+    try {
+      if (await tempDir.exists()) {
+        await tempDir.delete(recursive: true);
+      }
+    } catch (_) {}
   });
 
   Widget createWidgetUnderTest() {

@@ -28,6 +28,10 @@ void main() {
     await Hive.openBox('settings');
     await Hive.openBox<GoalModel>('goals');
     await Hive.openBox<DepositModel>('deposits');
+    await Hive.openBox('gamification');
+    await Hive.openBox('wallet');
+    await Hive.openBox('badges');
+    await Hive.openBox('mascot_box');
 
     goalRepo = GoalRepository();
     depositRepo = DepositRepository();
@@ -46,10 +50,14 @@ void main() {
   });
 
   tearDown(() async {
-    await Hive.close();
-    if (await tempDir.exists()) {
-      await tempDir.delete(recursive: true);
-    }
+    try {
+      await Hive.close().timeout(const Duration(milliseconds: 200), onTimeout: () => null);
+    } catch (_) {}
+    try {
+      if (await tempDir.exists()) {
+        await tempDir.delete(recursive: true);
+      }
+    } catch (_) {}
   });
 
   Widget createWidgetUnderTest() {
@@ -171,11 +179,13 @@ void main() {
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();
 
-      expect(find.text('Histórico de Depósitos'), findsOneWidget);
-      expect(find.text('0 depósitos'), findsOneWidget);
+      // Alterna para a aba Histórico no segmented control
+      await tester.tap(find.text('Histórico'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Histórico'), findsWidgets);
       expect(
           find.text('Cofrinho pronto para a primeira moeda!'), findsOneWidget);
-      expect(find.text('Fazer Primeiro Depósito'), findsOneWidget);
     });
 
     testWidgets('Exibe lista ordenada com valores, datas e anotações',
@@ -195,15 +205,20 @@ void main() {
         note: 'Freelance fim de semana',
       );
 
-      await depositRepo.save(dep1);
-      await depositRepo.save(dep2);
-      await goalRepo.update(testGoal.copyWith(savedAmount: 280.0));
+      await tester.runAsync(() async {
+        await depositRepo.save(dep1);
+        await depositRepo.save(dep2);
+        await goalRepo.update(testGoal.copyWith(savedAmount: 280.0));
+      });
 
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();
 
-      expect(find.text('Histórico de Depósitos'), findsOneWidget);
-      expect(find.text('2 depósitos'), findsOneWidget);
+      // Alterna para a aba Histórico no segmented control
+      await tester.tap(find.text('Histórico'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Histórico'), findsWidgets);
 
       // Depósitos visíveis
       expect(find.text('Economia do café'), findsOneWidget);

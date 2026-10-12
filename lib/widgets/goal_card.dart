@@ -147,7 +147,14 @@ class GoalCard extends StatelessWidget {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text('Meta', style: theme.textTheme.bodySmall),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text('Meta', style: theme.textTheme.bodySmall),
+                            const SizedBox(width: 4),
+                            Text('(${goal.progressPercent.toInt()}%)', style: theme.textTheme.bodySmall),
+                          ],
+                        ),
                         const SizedBox(height: 2),
                         Text(
                           AppFormatters.currency(goal.targetAmount),
@@ -273,10 +280,12 @@ class GoalCard extends StatelessWidget {
     );
   }
 
+  // Escolhe a cor do texto do prazo (vermelho se venceu/acabando, cinza neutro se tranquilo)
   Color _deadlineColor(BuildContext context, GoalModel goal) {
     final days = goal.daysRemaining;
-    if (days <= 0) return const Color(0xFFEF4444); // Red 500
-    if (days <= 7) return const Color(0xFFF59E0B); // Amber 500
-    return const Color(0xFF64748B); // Slate 500
+    if (days == null) return const Color(0xFF10B981);
+    if (days <= 0) return const Color(0xFFEF4444);
+    if (days <= 7) return const Color(0xFFF59E0B);
+    return const Color(0xFF64748B);
   }
 }

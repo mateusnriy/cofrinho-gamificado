@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uuid/uuid.dart';
 
 import '../../core/utils/formatters.dart';
-import '../../data/models/deposit_model.dart';
 import '../../data/models/goal_model.dart';
 import '../../core/providers/global_providers.dart';
+import '../../domain/usecases/register_deposit_use_case.dart';
 import '../../widgets/celebration_overlay.dart';
 
 class DepositScreen extends ConsumerStatefulWidget {
@@ -27,6 +26,7 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
   bool _isLoading = false;
+  int _dateOffset = 0; // 0 para Hoje, 1 para Ontem (resgate de streak)
 
   // UX-DR3: Chips de valores rápidos
   static const _quickValues = [10.0, 25.0, 50.0, 100.0, 200.0];
@@ -230,6 +230,73 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                   ),
                 ),
 
+                const SizedBox(height: 12),
+
+                // Seletor de data Hoje vs. Ontem (resgate de streak do dia anterior)
+                Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => setState(() => _dateOffset = 0),
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          decoration: BoxDecoration(
+                            color: _dateOffset == 0
+                                ? goalColor.withValues(alpha: 0.15)
+                                : Theme.of(context).cardTheme.color,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: _dateOffset == 0 ? goalColor : Colors.grey.withValues(alpha: 0.2),
+                              width: _dateOffset == 0 ? 1.5 : 1,
+                            ),
+                          ),
+                          child: Text(
+                            'Hoje',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: _dateOffset == 0 ? goalColor : null,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => setState(() => _dateOffset = 1),
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          decoration: BoxDecoration(
+                            color: _dateOffset == 1
+                                ? goalColor.withValues(alpha: 0.15)
+                                : Theme.of(context).cardTheme.color,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: _dateOffset == 1 ? goalColor : Colors.grey.withValues(alpha: 0.2),
+                              width: _dateOffset == 1 ? 1.5 : 1,
+                            ),
+                          ),
+                          child: Text(
+                            'Ontem',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: _dateOffset == 1 ? goalColor : null,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
                 // UX-DR3: Contador de Oinc Coins em tempo real
                 if (_isAmountValid && amount != null && amount > 0) ...[
                   const SizedBox(height: 16),
@@ -341,6 +408,7 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
     );
   }
 
+  // Valida e salva o novo depósito na meta
   Future<void> _save() async {
     FocusScope.of(context).unfocus();
 
@@ -353,12 +421,16 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
       _isLoading = true;
     });
 
-    final useCase = ref.read(registerDepositUseCaseProvider);
-    final result = await useCase.execute(
-      goalId: widget.goal.id,
-      amount: amount,
-      note: _noteController.text,
-    );
+    DepositResult? result;
+    try {
+      final useCase = ref.read(registerDepositUseCaseProvider);
+      result = await useCase.execute(
+        goalId: widget.goal.id,
+        amount: amount,
+        date: DateTime.now().subtract(Duration(days: _dateOffset)),
+        note: _noteController.text,
+      );
+    } catch (_) {}
 
     setState(() => _isLoading = false);
 
@@ -371,24 +443,31 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
         HapticFeedback.mediumImpact();
       }
 
+      final messenger = ScaffoldMessenger.of(context);
       final rootNav = Navigator.of(context);
-      rootNav.pop();
+      final overlay = rootNav.overlay;
+      if (rootNav.canPop()) {
+        rootNav.pop();
+      }
       widget.onDepositSaved?.call();
 
       if (rootNav.context.mounted) {
         if (result.isGoalCompleted) {
           CelebrationOverlay.showGoalCompleted(
             rootNav.context,
+            overlayState: overlay,
             goalName: widget.goal.name,
           );
         } else if (result.newBadges.isNotEmpty) {
           CelebrationOverlay.showBadgeUnlocked(
             rootNav.context,
+            overlayState: overlay,
             badgeTitle: result.newBadges.first.title,
           );
         } else if (result.newMilestoneReached) {
           CelebrationOverlay.showMilestoneReached(
             rootNav.context,
+            overlayState: overlay,
             goalName: widget.goal.name,
             milestonePercent: result.milestonesAfter * 25,
           );
@@ -401,7 +480,7 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
           ? ' 🎯 Novo marco de ${result.milestonesAfter * 25}% atingido!'
           : '';
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(
           content: Row(
             children: [

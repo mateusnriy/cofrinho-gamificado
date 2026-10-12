@@ -47,10 +47,14 @@ void main() {
   });
 
   tearDown(() async {
-    await Hive.close();
-    if (await tempDir.exists()) {
-      await tempDir.delete(recursive: true);
-    }
+    try {
+      await Hive.close().timeout(const Duration(milliseconds: 200), onTimeout: () => null);
+    } catch (_) {}
+    try {
+      if (await tempDir.exists()) {
+        await tempDir.delete(recursive: true);
+      }
+    } catch (_) {}
   });
 
   group('Story 5.3: Porko Store & Guarda-Roupa - Unit Tests', () {
@@ -111,7 +115,9 @@ void main() {
   group('Story 5.3: PorkoStoreScreen - Widget Tests', () {
     testWidgets('Renderiza vitrine de itens cosméticos com abas e saldo',
         (tester) async {
-      await walletRepo.addCoins(600);
+      await tester.runAsync(() async {
+        await walletRepo.addCoins(600);
+      });
 
       await tester.pumpWidget(
         ProviderScope(
@@ -144,7 +150,9 @@ void main() {
 
     testWidgets('Compra de item com confirmacao atualiza estado para Equipado',
         (tester) async {
-      await walletRepo.addCoins(800);
+      await tester.runAsync(() async {
+        await walletRepo.addCoins(800);
+      });
 
       await tester.pumpWidget(
         ProviderScope(
@@ -163,6 +171,10 @@ void main() {
 
       await tester.pumpAndSettle();
 
+      // Rola a tela para revelar o item
+      await tester.drag(find.byType(SingleChildScrollView).first, const Offset(0, -300));
+      await tester.pumpAndSettle();
+
       // Clica no botão de comprar a skin Porko Chocolate (500 coins)
       final buyButton = find.textContaining('500');
       expect(buyButton, findsOneWidget);
@@ -174,6 +186,10 @@ void main() {
 
       // Confirma a compra
       await tester.tap(find.text('Confirmar Compra'));
+      await tester.pump();
+      await tester.runAsync(() async {
+        await Future.delayed(const Duration(milliseconds: 300));
+      });
       await tester.pumpAndSettle();
 
       // Saldo reduziu para 300 e item agora está Equipado

@@ -65,16 +65,19 @@ final streakProvider = Provider<Map<String, dynamic>>((ref) {
   };
 });
 
+// Registra novos depósitos conectando todos os repositórios
 final registerDepositUseCaseProvider = Provider<RegisterDepositUseCase>((ref) {
   final goalRepo = ref.watch(goalRepositoryProvider);
   final depositRepo = ref.watch(depositRepositoryProvider);
   final gamificationRepo = ref.watch(gamificationRepositoryProvider);
   final walletRepo = ref.watch(walletRepositoryProvider);
+  final mascotRepo = ref.watch(mascotRepositoryProvider);
   return RegisterDepositUseCase(
     goalRepo: goalRepo,
     depositRepo: depositRepo,
     gamificationRepo: gamificationRepo,
     walletRepo: walletRepo,
+    mascotRepo: mascotRepo,
   );
 });
 

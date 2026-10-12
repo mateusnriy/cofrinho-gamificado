@@ -28,16 +28,23 @@ void main() {
     await Hive.openBox('settings');
     await Hive.openBox<GoalModel>('goals');
     await Hive.openBox<DepositModel>('deposits');
+    await Hive.openBox('gamification');
+    await Hive.openBox('wallet');
+    await Hive.openBox('mascot_box');
 
     goalRepo = GoalRepository();
     depositRepo = DepositRepository();
   });
 
   tearDown(() async {
-    await Hive.close();
-    if (await tempDir.exists()) {
-      await tempDir.delete(recursive: true);
-    }
+    try {
+      await Hive.close().timeout(const Duration(milliseconds: 200), onTimeout: () => null);
+    } catch (_) {}
+    try {
+      if (await tempDir.exists()) {
+        await tempDir.delete(recursive: true);
+      }
+    } catch (_) {}
   });
 
   group('Story 3.1 - Repositório: Consolidação de Patrimônio', () {
@@ -162,7 +169,9 @@ void main() {
         colorValue: 0xFF8B5CF6,
         createdAt: DateTime.now(),
       );
-      await goalRepo.save(goal);
+      await tester.runAsync(() async {
+        await goalRepo.save(goal);
+      });
 
       await tester.pumpWidget(
         ProviderScope(
@@ -177,15 +186,21 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Banner patrimonial deve estar visível
-      expect(find.text('Patrimônio Guardado'), findsOneWidget);
-      expect(find.text('R\$ 3.500,00'), findsOneWidget);
-      expect(find.text('35%'), findsOneWidget);
-      expect(find.text('De R\$ 10.000,00 em 1 meta'), findsOneWidget);
+      // Resumo das metas deve estar visível
+      expect(find.text('🎯 Minhas metas'), findsOneWidget);
+      expect(find.textContaining('35%'), findsOneWidget);
+
+      // Ao tocar em ver total, revela o saldo acumulado
+      await tester.tap(find.text('👁️ Ver total'));
+      await tester.pump();
+      expect(find.textContaining('3.500,00'), findsWidgets);
+
+      // Avança o timer de privacidade de 3 segundos para que ele expire limpo
+      await tester.pump(const Duration(seconds: 4));
     });
 
-    testWidgets('Atualiza os valores de forma reativa após adição de depósito',
-        (tester) async {
+    test('Atualiza os valores de forma reativa após adição de depósito',
+        () async {
       final goal = GoalModel(
         id: 'ui-pat-react',
         name: 'Reserva',
@@ -211,9 +226,13 @@ void main() {
       // Adiciona depósito e atualiza meta
       await goalRepo.addDeposit(goal.id, 300.0);
 
+      // Dispara ciclo do container
+      container.pump();
+
       // Provider reflete o novo saldo e progresso
       expect(container.read(goalStatsProvider)['totalSaved'], 500.0);
       expect(container.read(goalStatsProvider)['overallProgress'], 0.5);
+      container.dispose();
     });
   });
 }

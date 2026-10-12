@@ -46,6 +46,7 @@ class GoalFormState {
     String? selectedEconomyMode,
     String? note,
     String? reminderTime,
+    bool clearReminder = false,
     bool? isLoading,
     String? errorMessage,
     bool clearError = false,
@@ -59,7 +60,7 @@ class GoalFormState {
       colorValue: colorValue ?? this.colorValue,
       selectedEconomyMode: selectedEconomyMode ?? this.selectedEconomyMode,
       note: note ?? this.note,
-      reminderTime: reminderTime ?? this.reminderTime,
+      reminderTime: clearReminder ? null : (reminderTime ?? this.reminderTime),
       isLoading: isLoading ?? this.isLoading,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
     );
@@ -93,30 +94,28 @@ class GoalFormState {
       return 'O novo valor não pode ser menor que o valor já economizado (${AppFormatters.currency(existingGoal.savedAmount)})';
     }
 
-    if (deadline == null) {
-      return 'Selecione a data limite da meta';
-    }
+    // Se o usuário preencheu uma data limite, confere se é uma data futura
+    if (deadline != null) {
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final selectedDate =
+          DateTime(deadline!.year, deadline!.month, deadline!.day);
 
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final selectedDate =
-        DateTime(deadline!.year, deadline!.month, deadline!.day);
-
-    // O prazo deve ser estritamente futuro (> hoje)
-    if (!selectedDate.isAfter(today)) {
-      return 'O prazo deve ser uma data futura';
+      if (!selectedDate.isAfter(today)) {
+        return 'O prazo deve ser uma data futura';
+      }
     }
 
     return null;
   }
 
-  /// Validação completa antes de salvar
+  // Validação antes de salvar a meta
   String? validate({GoalModel? existingGoal}) {
     final step1Error = validateStep1(existingGoal: existingGoal);
     if (step1Error != null) return step1Error;
 
-    // No passo 2, seleção do ritmo de economia
-    if (selectedEconomyMode == null) {
+    // Se tiver prazo definido, exige escolha do ritmo se ainda não escolheu
+    if (deadline != null && selectedEconomyMode == null) {
       return 'Selecione um ritmo de economia para continuar';
     }
 
@@ -147,8 +146,26 @@ class GoalFormNotifier extends StateNotifier<GoalFormState> {
       state = state.copyWith(name: value, clearError: true);
   void setAmount(String value) =>
       state = state.copyWith(amountText: value, clearError: true);
+  // Define a data limite escolhida
   void setDeadline(DateTime value) =>
       state = state.copyWith(deadline: value, clearError: true);
+
+  // Remove a data limite para deixar a meta no ritmo livre
+  void setDeadlineNull() {
+    state = GoalFormState(
+      currentStep: state.currentStep,
+      name: state.name,
+      amountText: state.amountText,
+      deadline: null,
+      iconCodePoint: state.iconCodePoint,
+      colorValue: state.colorValue,
+      selectedEconomyMode: 'free',
+      note: state.note,
+      reminderTime: state.reminderTime,
+      isLoading: state.isLoading,
+      errorMessage: null,
+    );
+  }
   void setIcon(int codePoint) =>
       state = state.copyWith(iconCodePoint: codePoint);
   void setColor(int colorValue) =>
@@ -159,7 +176,7 @@ class GoalFormNotifier extends StateNotifier<GoalFormState> {
   }
   void setNote(String? value) => state = state.copyWith(note: value);
   void setReminder(String? value) =>
-      state = state.copyWith(reminderTime: value);
+      state = state.copyWith(reminderTime: value, clearReminder: value == null);
 
   bool nextStep({GoalModel? existingGoal}) {
     final error = state.validateStep1(existingGoal: existingGoal);
@@ -199,7 +216,7 @@ class GoalFormNotifier extends StateNotifier<GoalFormState> {
       id: existingId ?? const Uuid().v4(),
       name: state.name.trim(),
       targetAmount: state.parsedAmount!,
-      deadline: state.deadline!,
+      deadline: state.deadline,
       iconCodePoint: state.iconCodePoint,
       colorValue: state.colorValue,
       note: state.note?.trim().isEmpty == true ? null : state.note?.trim(),
@@ -207,6 +224,7 @@ class GoalFormNotifier extends StateNotifier<GoalFormState> {
       createdAt: existingGoal?.createdAt ?? DateTime.now(),
       savedAmount: existingGoal?.savedAmount ?? 0.0,
       isArchived: existingGoal?.isArchived ?? false,
+      rhythm: state.selectedEconomyMode ?? 'free',
     );
 
     await _repo.save(goal);
@@ -229,7 +247,9 @@ class GoalFormNotifier extends StateNotifier<GoalFormState> {
       // Isolamento defensivo: falha no serviço nativo não compromete persistência
     }
 
-    state = state.copyWith(isLoading: false);
+    if (mounted) {
+      state = state.copyWith(isLoading: false);
+    }
     return true;
   }
 }

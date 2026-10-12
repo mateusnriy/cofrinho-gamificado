@@ -140,7 +140,6 @@ flutter run
 | Membro | Função | GitHub |
 | :--- | :--- | :--- |
 | **Mateus Neri** | Desenvolvimento & Arquitetura | [@mateusnriy](https://github.com/mateusnriy) |
-| **Kaio França** | Desenvolvimento & Gamificação | [@kaiofranca](https://github.com/kaiofranca) |
 
 ---
 

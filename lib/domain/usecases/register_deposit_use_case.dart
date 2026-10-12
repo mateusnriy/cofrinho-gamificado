@@ -6,9 +6,11 @@ import '../../data/repositories/deposit_repository.dart';
 import '../../data/repositories/goal_repository.dart';
 import '../../data/repositories/gamification_repository.dart';
 import '../../data/repositories/wallet_repository.dart';
+import '../../data/repositories/mascot_repository.dart';
 import '../../core/utils/notification_service.dart';
 import 'evaluate_badges_use_case.dart';
 
+// Guarda o resultado de um depósito feito com sucesso
 class DepositResult {
   final GoalModel goal;
   final DepositModel deposit;
@@ -37,25 +39,31 @@ class DepositResult {
   });
 }
 
+// Registra um depósito na meta, atualiza moedas, sequencia e anima o mascote
 class RegisterDepositUseCase {
   final GoalRepository _goalRepo;
   final DepositRepository _depositRepo;
   final GamificationRepository? _gamificationRepo;
   final WalletRepository? _walletRepo;
+  final MascotRepository? _mascotRepo;
 
   RegisterDepositUseCase({
     required GoalRepository goalRepo,
     required DepositRepository depositRepo,
     GamificationRepository? gamificationRepo,
     WalletRepository? walletRepo,
+    MascotRepository? mascotRepo,
   })  : _goalRepo = goalRepo,
         _depositRepo = depositRepo,
         _gamificationRepo = gamificationRepo,
-        _walletRepo = walletRepo;
+        _walletRepo = walletRepo,
+        _mascotRepo = mascotRepo;
 
+  // Executa o registro de um depósito com validações, pontuação e bônus
   Future<DepositResult?> execute({
     required String goalId,
     required double amount,
+    DateTime? date,
     String? note,
   }) async {
     if (amount <= 0) return null;
@@ -67,22 +75,24 @@ class RegisterDepositUseCase {
     if (amount > remaining) return null;
 
     final milestonesBefore = goal.completedMilestonesCount;
+    final depositDate = date ?? DateTime.now();
 
     final deposit = DepositModel(
       id: const Uuid().v4(),
       goalId: goalId,
       amount: amount,
-      date: DateTime.now(),
+      date: depositDate,
       note: note?.trim().isEmpty == true ? null : note?.trim(),
     );
 
-    // Transação atômica local: grava depósito, incrementa saldo e atualiza streak (ARCH-4)
+    // Salva o registro do depósito e atualiza o saldo da meta
     await _depositRepo.save(deposit);
     await _goalRepo.addDeposit(goalId, amount);
 
     int currentStreak = 1;
     List<BadgeDefinition> newBadges = [];
 
+    // Atualiza a sequência diária e verifica conquistas destravadas
     if (_gamificationRepo != null) {
       try {
         currentStreak =
@@ -102,6 +112,7 @@ class RegisterDepositUseCase {
     int coinsEarned = amount.floor();
     bool dailyBonusEarned = false;
 
+    // Concede moedas Oinc Coins e bônus diário se aplicável
     if (_walletRepo != null) {
       try {
         await _walletRepo!.addCoins(coinsEarned);
@@ -113,7 +124,7 @@ class RegisterDepositUseCase {
       } catch (_) {}
     }
 
-    // Se a meta foi concluída com este depósito, cancela lembretes diários e celebra (AD-5)
+    // Se a meta foi atingida, dispara a notificação de comemoração
     if (updatedGoal.isCompleted) {
       if (updatedGoal.reminderTime != null) {
         try {
@@ -125,6 +136,13 @@ class RegisterDepositUseCase {
         await NotificationService().showCompletionNotification(
           goalName: updatedGoal.name,
         );
+      } catch (_) {}
+    }
+
+    // Faz o mascote Porko comemorar o depósito com muita alegria
+    if (_mascotRepo != null) {
+      try {
+        await _mascotRepo!.celebrateDeposit();
       } catch (_) {}
     }
 

@@ -329,7 +329,7 @@ class _MilestoneItemWidget extends StatelessWidget {
                               size: 13,
                               color: goalColor,
                             ),
-                            SizedBox(width: 4),
+                            const SizedBox(width: 4),
                             Text(
                               'Próximo marco: faltam ${AppFormatters.currency(remainingForThis)}',
                               style: TextStyle(

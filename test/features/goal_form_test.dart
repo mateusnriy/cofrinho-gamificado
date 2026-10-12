@@ -73,18 +73,20 @@ void main() {
       expect(notifier.state.currentStep, equals(0));
     });
 
-    test('Deve barrar prazo sem seleção ou retroativo/hoje', () {
+    test('Permite avançar sem prazo (opcional) e barra prazo retroativo/hoje', () {
       final notifier = GoalFormNotifier(repository);
       notifier.setName('Viagem');
       notifier.setAmount('500');
 
-      // Sem prazo
+      // Sem prazo é permitido (prazo opcional com ritmo livre)
       var success = notifier.nextStep();
-      expect(success, isFalse);
-      expect(notifier.state.errorMessage,
-          equals('Selecione a data limite da meta'));
+      expect(success, isTrue);
+      expect(notifier.state.currentStep, equals(1));
 
-      // Prazo para hoje
+      // Volta para o passo 0
+      notifier.previousStep();
+
+      // Prazo para hoje ou retroativo deve ser barrado
       final now = DateTime.now();
       notifier.setDeadline(DateTime(now.year, now.month, now.day));
       success = notifier.nextStep();
@@ -129,7 +131,7 @@ void main() {
       expect(find.text('Ritmo de Economia'), findsOneWidget);
       expect(find.text('Nome da meta *'), findsOneWidget);
       expect(find.text('Valor alvo da meta *'), findsOneWidget);
-      expect(find.text('Data limite (Prazo) *'), findsOneWidget);
+      expect(find.text('Data limite (Prazo) (opcional)'), findsOneWidget);
       expect(find.text('Continuar para o Ritmo'), findsOneWidget);
     });
 
@@ -139,6 +141,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final continueButton = find.text('Continuar para o Ritmo');
+      await tester.ensureVisible(continueButton);
       await tester.tap(continueButton);
       await tester.pumpAndSettle();
 

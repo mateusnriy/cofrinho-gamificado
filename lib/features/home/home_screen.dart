@@ -1,441 +1,81 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/utils/formatters.dart';
 import '../../core/providers/theme_provider.dart';
 import '../../core/providers/global_providers.dart';
 import '../../data/models/goal_model.dart';
+import '../../data/models/mascot_model.dart';
 import '../../data/repositories/goal_repository.dart';
 import '../../widgets/goal_card.dart';
+import '../../widgets/custom_docked_bottom_bar.dart';
+import '../../widgets/habitat_header_widget.dart';
 import '../goal_form/goal_form_screen.dart';
 import '../goal_detail/goal_detail_screen.dart';
 import '../deposit/deposit_screen.dart';
 import '../gamification/badges_gallery_screen.dart';
 import '../shop/porko_store_screen.dart';
-import '../../widgets/porko_canvas_widget.dart';
+import '../mascot/mascot_screen.dart';
+import '../profile/profile_settings_modal.dart';
 import 'home_provider.dart';
 
-class HomeScreen extends ConsumerWidget {
+// Tela principal com habitat orgânico, 4 abas e o botão central (+) projetado
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final goals = ref.watch(homeGoalsProvider);
-    final stats = ref.watch(goalStatsProvider);
-    final sortOrder = ref.watch(sortOrderProvider);
-    final porkoMood = ref.watch(porkoMoodProvider);
-    final equippedMascot = ref.watch(equippedMascotProvider);
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
 
-    return Scaffold(
-      body: goals.isEmpty
-          ? _buildEmptyState(context, ref, sortOrder)
-          : SafeArea(
-              bottom: false,
-              child: Center(
-                // RESPONSIVIDADE: Evita esticar elementos em Tablets/Web
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 600),
-                  child: CustomScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    slivers: [
-                      SliverToBoxAdapter(
-                        child: _buildCustomHeader(context, ref, sortOrder),
-                      ),
-                      SliverToBoxAdapter(
-                        child: _PremiumSummaryBanner(stats: stats),
-                      ),
-                      SliverToBoxAdapter(
-                        child: PorkoCanvasWidget(
-                          mood: porkoMood,
-                          mascot: equippedMascot,
-                        ),
-                      ),
-                      SliverPadding(
-                        padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
-                        sliver: SliverToBoxAdapter(
-                          child: Text(
-                            'Minhas Metas',
-                            style: Theme.of(context).textTheme.headlineSmall,
-                          ),
-                        ),
-                      ),
-                      SliverPadding(
-                        padding: const EdgeInsets.only(bottom: 120),
-                        sliver: SliverList(
-                          delegate: SliverChildBuilderDelegate(
-                            (context, index) {
-                              final goal = goals[index];
-                              return GoalCard(
-                                goal: goal,
-                                onTap: () => _openDetail(context, goal),
-                                onAddDeposit: () =>
-                                    _openDepositSheet(context, ref, goal),
-                              );
-                            },
-                            childCount: goals.length,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openGoalForm(context),
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('Nova Meta'),
-      ),
-    );
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  // Guarda a aba atualmente selecionada
+  int _currentTabIndex = 0;
+
+  // Controle de exibição do total acumulado (privacidade temporizada de 3s)
+  bool _showTotalAmount = false;
+  Timer? _totalPrivacyTimer;
+
+  @override
+  void dispose() {
+    _totalPrivacyTimer?.cancel();
+    super.dispose();
   }
 
-  Widget _buildCustomHeader(
-      BuildContext context, WidgetRef ref, SortOrder sortOrder) {
-    // Escuta mudanças de tema e streak para disparar rebuild reativo
-    ref.watch(themeProvider);
-    final streakData = ref.watch(streakProvider);
-    final currentStreak = (streakData['currentStreak'] as int?) ?? 0;
-    final walletBalance = ref.watch(walletBalanceProvider);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  // Alterna a exibição do total guardado com timer de 3 segundos
+  void _toggleRevealTotal() {
+    HapticFeedback.lightImpact();
+    setState(() {
+      _showTotalAmount = !_showTotalAmount;
+    });
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 20, 20, 10),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // RESPONSIVIDADE: Expanded para não quebrar a tela em telemóveis finos
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Olá, Bem-vindo! 👋',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Cofrinho Digital',
-                  style: Theme.of(context).textTheme.headlineMedium,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          Row(
-            children: [
-              GestureDetector(
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Row(
-                        children: [
-                          const Text('🪙', style: TextStyle(fontSize: 18)),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Saldo: $walletBalance Oinc Coins! Ganhe +1 por real poupado e +50 no 1º depósito do dia.',
-                            ),
-                          ),
-                        ],
-                      ),
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                    ),
-                  );
-                },
-                child: Tooltip(
-                  message: 'Saldo: $walletBalance Oinc Coins',
-                  child: Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color:
-                              const Color(0xFFF59E0B).withValues(alpha: 0.35),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text(
-                          '🪙',
-                          style: TextStyle(fontSize: 13),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '$walletBalance',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              if (currentStreak > 0)
-                Tooltip(
-                  message:
-                      'Sequência de $currentStreak ${currentStreak == 1 ? 'dia' : 'dias'} consecutivos!',
-                  child: Container(
-                    margin: const EdgeInsets.only(right: 12),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFF97316), Color(0xFFEF4444)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color:
-                              const Color(0xFFF97316).withValues(alpha: 0.35),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text(
-                          '🔥',
-                          style: TextStyle(fontSize: 13),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '$currentStreak ${currentStreak == 1 ? 'dia' : 'dias'}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              Container(
-                margin: const EdgeInsets.only(right: 12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardTheme.color,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 10,
-                    )
-                  ],
-                ),
-                child: IconButton(
-                  icon: const Icon(
-                    Icons.emoji_events_rounded,
-                    color: Color(0xFFF59E0B),
-                  ),
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const BadgesGalleryScreen(),
-                    ),
-                  ),
-                  tooltip: 'Galeria de Conquistas',
-                ),
-              ),
-              Container(
-                margin: const EdgeInsets.only(right: 12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardTheme.color,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 10,
-                    )
-                  ],
-                ),
-                child: IconButton(
-                  icon: const Icon(
-                    Icons.storefront_rounded,
-                    color: Color(0xFFEC4899),
-                  ),
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const PorkoStoreScreen(),
-                    ),
-                  ),
-                  tooltip: 'Porko Store',
-                ),
-              ),
-              Container(
-                margin: const EdgeInsets.only(right: 12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardTheme.color,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 10,
-                    )
-                  ],
-                ),
-                child: IconButton(
-                  icon: Icon(
-                    isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-                    color: Theme.of(context).textTheme.bodyLarge?.color,
-                  ),
-                  onPressed: () =>
-                      ref.read(themeProvider.notifier).toggleTheme(),
-                  tooltip: isDark ? 'Mudar para modo claro' : 'Mudar para modo escuro',
-                ),
-              ),
-              Container(
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardTheme.color,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 10,
-                    )
-                  ],
-                ),
-                child: PopupMenuButton<SortOrder>(
-                  icon: Icon(Icons.tune_rounded,
-                      color: Theme.of(context).textTheme.bodyLarge?.color),
-                  tooltip: 'Ordenar metas',
-                  initialValue: sortOrder,
-                  onSelected: (order) =>
-                      ref.read(sortOrderProvider.notifier).setOrder(order),
-                  itemBuilder: (_) => [
-                    PopupMenuItem(
-                      value: SortOrder.createdAt,
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.schedule_rounded,
-                            size: 18,
-                            color: sortOrder == SortOrder.createdAt
-                                ? Theme.of(context).colorScheme.primary
-                                : Colors.grey,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              'Mais recentes',
-                              style: TextStyle(
-                                fontWeight: sortOrder == SortOrder.createdAt
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                              ),
-                            ),
-                          ),
-                          if (sortOrder == SortOrder.createdAt)
-                            Icon(Icons.check_rounded,
-                                size: 18,
-                                color: Theme.of(context).colorScheme.primary),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: SortOrder.deadline,
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.event_rounded,
-                            size: 18,
-                            color: sortOrder == SortOrder.deadline
-                                ? Theme.of(context).colorScheme.primary
-                                : Colors.grey,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              'Por prazo',
-                              style: TextStyle(
-                                fontWeight: sortOrder == SortOrder.deadline
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                              ),
-                            ),
-                          ),
-                          if (sortOrder == SortOrder.deadline)
-                            Icon(Icons.check_rounded,
-                                size: 18,
-                                color: Theme.of(context).colorScheme.primary),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: SortOrder.progress,
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.trending_up_rounded,
-                            size: 18,
-                            color: sortOrder == SortOrder.progress
-                                ? Theme.of(context).colorScheme.primary
-                                : Colors.grey,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              'Por progresso',
-                              style: TextStyle(
-                                fontWeight: sortOrder == SortOrder.progress
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                              ),
-                            ),
-                          ),
-                          if (sortOrder == SortOrder.progress)
-                            Icon(Icons.check_rounded,
-                                size: 18,
-                                color: Theme.of(context).colorScheme.primary),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+    if (_showTotalAmount) {
+      _totalPrivacyTimer?.cancel();
+      _totalPrivacyTimer = Timer(const Duration(seconds: 3), () {
+        if (mounted) {
+          setState(() => _showTotalAmount = false);
+        }
+      });
+    }
   }
 
-  void _openDetail(BuildContext context, GoalModel goal) {
-    Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => GoalDetailScreen(goalId: goal.id)));
-  }
-
+  // Abre a tela de criar nova meta financeira
   void _openGoalForm(BuildContext context, {GoalModel? goal}) {
     Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => GoalFormScreen(existingGoal: goal)));
+      MaterialPageRoute(builder: (_) => GoalFormScreen(existingGoal: goal)),
+    );
   }
 
-  void _openDepositSheet(BuildContext context, WidgetRef ref, GoalModel goal) {
+  // Abre a tela de detalhes de uma meta ao tocar nela
+  void _openDetail(BuildContext context, GoalModel goal) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => GoalDetailScreen(goalId: goal.id)),
+    );
+  }
+
+  // Abre a tela para registrar um depósito na meta
+  void _openDepositSheet(BuildContext context, GoalModel goal) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -444,216 +84,440 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState(
-      BuildContext context, WidgetRef ref, SortOrder sortOrder) {
-    final porkoMood = ref.watch(porkoMoodProvider);
-    final equippedMascot = ref.watch(equippedMascotProvider);
+  // Abre o modal de configurações de perfil e tema
+  void _openProfileModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const ProfileSettingsModal(),
+    );
+  }
 
-    return SafeArea(
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
+  // Abre o menu deslizante central com as duas opções rápidas do botão (+)
+  void _openQuickActionSheet(BuildContext context, List<GoalModel> goals) {
+    HapticFeedback.mediumImpact();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final theme = Theme.of(ctx);
+        final isDark = theme.brightness == Brightness.dark;
+        return Container(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1B2E22) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border.all(
+              color: isDark ? const Color(0xFF2F4A37) : const Color(0xFFE2E8E2),
+            ),
+          ),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              _buildCustomHeader(context, ref, sortOrder),
-              Expanded(
-                child: Center(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 24),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        PorkoCanvasWidget(
-                          mood: porkoMood,
-                          mascot: equippedMascot,
-                        ),
-                        const SizedBox(height: 24),
-                        Text(
-                          'Comece a poupar hoje',
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.headlineMedium,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Crie a sua primeira meta financeira\ne acompanhe o seu progresso de forma inteligente.',
-                          textAlign: TextAlign.center,
-                          style:
-                              Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                    color: const Color(0xFF64748B),
-                                    height: 1.5,
-                                  ),
-                        ),
-                        const SizedBox(height: 40),
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 300),
-                          child: ElevatedButton(
-                            onPressed: () => _openGoalForm(context),
-                            child: const Text('Criar primeira meta'),
-                          ),
-                        ),
-                      ],
+              Container(
+                width: 44,
+                height: 5,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: Colors.grey.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(5),
+                ),
+              ),
+              Text(
+                'O que você deseja fazer?',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : const Color(0xFF1A1A1A),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildActionCard(
+                      ctx: ctx,
+                      emoji: '💰',
+                      title: 'Novo Depósito',
+                      subtitle: 'Guardar moedinhas',
+                      color: const Color(0xFF10B981),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        if (goals.isEmpty) {
+                          _openGoalForm(context);
+                        } else {
+                          _openDepositSheet(context, goals.first);
+                        }
+                      },
                     ),
                   ),
-                ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: _buildActionCard(
+                      ctx: ctx,
+                      emoji: '🎯',
+                      title: 'Nova Meta',
+                      subtitle: 'Criar novo objetivo',
+                      color: const Color(0xFF3B82F6),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _openGoalForm(context);
+                      },
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  // Card com opção do menu rápido do botão (+)
+  Widget _buildActionCard({
+    required BuildContext ctx,
+    required String emoji,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color.withValues(alpha: 0.30)),
+        ),
+        child: Column(
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 32)),
+            const SizedBox(height: 10),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.bold,
+                color: color,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Nunito',
+                color: Colors.grey.shade600,
+                fontSize: 11,
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
-}
-
-class _PremiumSummaryBanner extends StatelessWidget {
-  final Map<String, dynamic> stats;
-
-  const _PremiumSummaryBanner({required this.stats});
 
   @override
   Widget build(BuildContext context) {
-    final totalSaved = (stats['totalSaved'] as double?) ?? 0;
-    final totalTarget = (stats['totalTarget'] as double?) ?? 0;
-    final overallProgress = (stats['overallProgress'] as double?) ?? 0;
-    final totalGoals = (stats['totalGoals'] as int?) ?? 0;
-    final completed = (stats['completed'] as int?) ?? 0;
-
-    if (totalTarget == 0) return const SizedBox.shrink();
-
+    final goals = ref.watch(homeGoalsProvider);
+    final stats = ref.watch(goalStatsProvider);
+    final sortOrder = ref.watch(sortOrderProvider);
+    final porkoMood = ref.watch(porkoMoodProvider);
+    final equippedMascot = ref.watch(equippedMascotProvider);
+    final streakData = ref.watch(streakProvider);
+    final currentStreak = (streakData['currentStreak'] as int?) ?? 0;
+    final walletBalance = ref.watch(walletBalanceProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Container(
-      margin: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        border: isDark
-            ? Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1.5)
-            : null,
-        borderRadius: BorderRadius.circular(32),
-        boxShadow: [
-          if (!isDark)
-            BoxShadow(
-              color: const Color(0xFF0F172A).withValues(alpha: 0.3),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
-        ],
+    // Se estiver em outra aba selecionada, exibe a respectiva tela
+    Widget activeBody;
+    switch (_currentTabIndex) {
+      case 1:
+        activeBody = const BadgesGalleryScreen();
+        break;
+      case 2:
+        activeBody = const PorkoStoreScreen();
+        break;
+      case 3:
+        activeBody = const MascotScreen();
+        break;
+      case 0:
+      default:
+        activeBody = _buildHomeDashboard(
+          context: context,
+          goals: goals,
+          stats: stats,
+          sortOrder: sortOrder,
+          porkoMood: porkoMood,
+          equippedMascot: equippedMascot,
+          coins: walletBalance,
+          streakDays: currentStreak,
+          isDark: isDark,
+        );
+        break;
+    }
+
+    return Scaffold(
+      body: activeBody,
+      bottomNavigationBar: CustomDockedBottomBar(
+        currentIndex: _currentTabIndex,
+        onTabSelected: (index) {
+          setState(() => _currentTabIndex = index);
+        },
+        onFabPressed: () => _openQuickActionSheet(context, goals),
       ),
+    );
+  }
+
+  // Monta a tela inicial com o habitat no topo e a lista de metas
+  Widget _buildHomeDashboard({
+    required BuildContext context,
+    required List<GoalModel> goals,
+    required Map<String, dynamic> stats,
+    required SortOrder sortOrder,
+    required PorkoMood porkoMood,
+    required MascotModel equippedMascot,
+    required int coins,
+    required int streakDays,
+    required bool isDark,
+  }) {
+    final totalSaved = (stats['totalSaved'] as double?) ?? 0.0;
+
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.only(bottom: 40),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Patrimônio Guardado',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+          // ── 1. Habitat Natural Vivo do Porko (340px) ──────────────────────
+          HabitatHeaderWidget(
+            coins: coins,
+            streakDays: streakDays,
+            isDark: isDark,
+            hasGoals: goals.isNotEmpty,
+            mood: porkoMood,
+            mascot: equippedMascot,
+            onProfileTap: () => _openProfileModal(context),
+            onCoinsTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Saldo: $coins Oinc Coins! Ganhe +1 por real poupado e +50 no 1º depósito do dia.',
+                  ),
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
+              );
+              setState(() => _currentTabIndex = 2);
+            },
+            onThemeToggle: () {
+              ref.read(themeProvider.notifier).toggleTheme();
+            },
+            onPorkoTap: () {
+              HapticFeedback.lightImpact();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    porkoMood == PorkoMood.sleeping
+                        ? 'Oinc! O Porko acordou para dizer oi! 💤'
+                        : 'Oinc! Continue poupando todos os dias! 🪙',
+                  ),
+                  duration: const Duration(milliseconds: 1800),
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                child: Text(
-                  AppFormatters.percent(overallProgress * 100),
-                  style: const TextStyle(
-                    color: Color(0xFF34D399),
+              );
+            },
+          ),
+
+          const SizedBox(height: 16),
+
+          // ── 2. Seção "Minhas Metas" ───────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  '🎯 Minhas metas',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    fontSize: 13,
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            AppFormatters.currency(totalSaved),
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 36,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -1,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'De ${AppFormatters.currency(totalTarget)} em $totalGoals meta${totalGoals != 1 ? 's' : ''}',
-                style: const TextStyle(color: Colors.white60, fontSize: 13),
-              ),
-              if (completed > 0)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF10B981).withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.check_circle_rounded,
-                        size: 13,
-                        color: Color(0xFF34D399),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '$completed concluída${completed != 1 ? 's' : ''}',
-                        style: const TextStyle(
-                          color: Color(0xFF34D399),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
+                Row(
+                  children: [
+                    // Botão "👁️ Ver total" com privacidade
+                    GestureDetector(
+                      onTap: _toggleRevealTotal,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF243B2A) : const Color(0xFFEEF3EE),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: isDark ? const Color(0xFF2F4A37) : const Color(0xFFE2E8E2),
+                          ),
+                        ),
+                        child: Text(
+                          _showTotalAmount
+                              ? '💰 ${AppFormatters.currency(totalSaved)}'
+                              : '👁️ Ver total',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? Colors.white : const Color(0xFF1A1A1A),
+                          ),
                         ),
                       ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Stack(
-            children: [
-              Container(
-                height: 8,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  return Container(
-                    height: 8,
-                    width:
-                        constraints.maxWidth * overallProgress.clamp(0.0, 1.0),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF34D399),
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: const [
-                        BoxShadow(color: Color(0xFF34D399), blurRadius: 8),
+                    ),
+                    const SizedBox(width: 8),
+
+                    // Menu popup de ordenação
+                    PopupMenuButton<SortOrder>(
+                      tooltip: 'Ordenar metas',
+                      initialValue: sortOrder,
+                      onSelected: (order) {
+                        HapticFeedback.selectionClick();
+                        ref.read(sortOrderProvider.notifier).setOrder(order);
+                      },
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      color: isDark ? const Color(0xFF1B2E22) : Colors.white,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF243B2A) : const Color(0xFFEEF3EE),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: isDark ? const Color(0xFF2F4A37) : const Color(0xFFE2E8E2),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              _sortOrderLabel(sortOrder),
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: isDark ? Colors.white : const Color(0xFF1A1A1A),
+                              ),
+                            ),
+                            const SizedBox(width: 2),
+                            const Icon(Icons.arrow_drop_down_rounded, size: 16),
+                          ],
+                        ),
+                      ),
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: SortOrder.createdAt,
+                          child: Text('Mais recentes', style: TextStyle(fontSize: 13)),
+                        ),
+                        const PopupMenuItem(
+                          value: SortOrder.deadline,
+                          child: Text('Por prazo', style: TextStyle(fontSize: 13)),
+                        ),
+                        const PopupMenuItem(
+                          value: SortOrder.progress,
+                          child: Text('Por progresso', style: TextStyle(fontSize: 13)),
+                        ),
                       ],
                     ),
-                  );
-                },
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
+
+          const SizedBox(height: 10),
+
+          // ── 3. Lista de Cards ou Estado Vazio ─────────────────────────────
+          if (goals.isEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+              child: Column(
+                children: [
+                  const Text(
+                    'Comece a poupar hoje',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Crie a sua primeira meta financeira\ne acompanhe o seu progresso de forma inteligente.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'Nunito',
+                      fontSize: 14,
+                      color: isDark ? const Color(0xFFA5D6A7) : const Color(0xFF566259),
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    onPressed: () => _openGoalForm(context),
+                    icon: const Icon(Icons.add_rounded),
+                    label: const Text('Criar primeira meta'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isDark ? const Color(0xFF00C853) : const Color(0xFF2E7D32),
+                      foregroundColor: isDark ? const Color(0xFF04210F) : Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ] else ...[
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+              itemCount: goals.length,
+              itemBuilder: (context, index) {
+                final goal = goals[index];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: GoalCard(
+                    goal: goal,
+                    onTap: () => _openDetail(context, goal),
+                    onAddDeposit: () => _openDepositSheet(context, goal),
+                  ),
+                );
+              },
+            ),
+          ],
         ],
       ),
     );
+  }
+
+  // Rótulo textual da ordenação escolhida
+  String _sortOrderLabel(SortOrder order) {
+    switch (order) {
+      case SortOrder.deadline:
+        return 'Prazo mais curto';
+      case SortOrder.progress:
+        return 'Maior progresso';
+      case SortOrder.createdAt:
+        return 'Mais recentes';
+    }
   }
 }

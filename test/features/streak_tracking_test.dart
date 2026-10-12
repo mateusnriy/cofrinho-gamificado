@@ -32,6 +32,8 @@ void main() {
     await Hive.openBox<GoalModel>('goals');
     await Hive.openBox<DepositModel>('deposits');
     await Hive.openBox('gamification');
+    await Hive.openBox('wallet');
+    await Hive.openBox('mascot_box');
 
     goalRepo = GoalRepository();
     depositRepo = DepositRepository();
@@ -44,10 +46,14 @@ void main() {
   });
 
   tearDown(() async {
-    await Hive.close();
-    if (await tempDir.exists()) {
-      await tempDir.delete(recursive: true);
-    }
+    try {
+      await Hive.close();
+    } catch (_) {}
+    try {
+      if (await tempDir.exists()) {
+        await tempDir.delete(recursive: true);
+      }
+    } catch (_) {}
   });
 
   group('Story 4.1 - Repositório: Motor de Cálculo de Streaks', () {
@@ -161,7 +167,9 @@ void main() {
 
     testWidgets('Exibe badge de fogo com dias quando streak > 0',
         (tester) async {
-      await gamificationRepo.registerDepositDate(DateTime.now());
+      await tester.runAsync(() async {
+        await gamificationRepo.registerDepositDate(DateTime.now());
+      });
 
       await tester.pumpWidget(
         ProviderScope(
@@ -178,7 +186,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('🔥'), findsOneWidget);
-      expect(find.text('1 dia'), findsOneWidget);
+      expect(find.text('1 d'), findsOneWidget);
     });
   });
 }

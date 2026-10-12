@@ -22,19 +22,19 @@ class EconomyModality {
 }
 
 class EconomyCalculator {
-  /// Calcula as 3 modalidades de economia com base na meta e prazo.
-  ///
-  /// [targetAmount]  → valor total da meta
-  /// [savedAmount]   → quanto já foi economizado
-  /// [deadline]      → data-limite para atingir a meta
+  // Calcula sugestões de quanto poupar por dia, semana ou mês
   static List<EconomyModality> calculate({
     required double targetAmount,
     required double savedAmount,
-    required DateTime deadline,
+    DateTime? deadline,
   }) {
     final remaining = (targetAmount - savedAmount).clamp(0.0, double.infinity);
     final now = DateTime.now();
-    final daysLeft = deadline.difference(now).inDays.clamp(1, 36500);
+    final today = DateTime(now.year, now.month, now.day);
+    final targetDay = deadline != null
+        ? DateTime(deadline.year, deadline.month, deadline.day)
+        : today.add(const Duration(days: 30));
+    final daysLeft = targetDay.difference(today).inDays.clamp(1, 36500);
 
     // Evita divisão por zero
     final weeksLeft = (daysLeft / 7).ceilToDouble().clamp(1.0, double.infinity);
@@ -82,18 +82,20 @@ class EconomyCalculator {
     ];
   }
 
-  /// Retorna a saúde da meta como enum semântico
+  // Avalia se o ritmo da meta está em dia, atrasado ou concluído
   static GoalHealth evaluateHealth({
     required double targetAmount,
     required double savedAmount,
-    required DateTime deadline,
+    DateTime? deadline,
   }) {
     if (targetAmount == 0) return GoalHealth.undefined;
 
     final progress = savedAmount / targetAmount;
-    final daysLeft = deadline.difference(DateTime.now()).inDays;
-
     if (progress >= 1.0) return GoalHealth.completed;
+
+    if (deadline == null) return GoalHealth.onTrack;
+
+    final daysLeft = deadline.difference(DateTime.now()).inDays;
     if (daysLeft < 0) return GoalHealth.overdue;
 
     // Progresso esperado considerando tempo decorrido

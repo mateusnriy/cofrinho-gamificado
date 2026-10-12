@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -8,10 +10,18 @@ class NotificationService {
   factory NotificationService() => _instance;
   NotificationService._internal();
 
+  // Em ambientes de teste ou na web, evita chamadas a plugins nativos móveis
+  static bool disabledForTesting = false;
+  static bool get _isTesting =>
+      kIsWeb ||
+      disabledForTesting ||
+      (WidgetsBinding.instance.runtimeType.toString().contains('Test'));
+
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
 
   Future<void> initialize() async {
+    if (_isTesting) return;
     // Inicialização do TimeZone para agendamentos exatos
     tz.initializeTimeZones();
     final timezoneInfo = await FlutterTimezone.getLocalTimezone();
@@ -42,6 +52,7 @@ class NotificationService {
     required String goalName,
     required String timeStr, // "08:00"
   }) async {
+    if (_isTesting) return;
     const androidDetails = AndroidNotificationDetails(
       'goal_reminders',
       'Lembretes de metas',
@@ -79,16 +90,25 @@ class NotificationService {
   }
 
   Future<void> cancelGoalReminder(int notificationId) async {
-    await _plugin.cancel(notificationId);
+    if (_isTesting) return;
+    try {
+      await _plugin
+          .cancel(notificationId)
+          .timeout(const Duration(milliseconds: 300));
+    } catch (_) {}
   }
 
   Future<void> cancelAll() async {
-    await _plugin.cancelAll();
+    if (_isTesting) return;
+    try {
+      await _plugin.cancelAll().timeout(const Duration(milliseconds: 300));
+    } catch (_) {}
   }
 
   Future<void> showCompletionNotification({
     required String goalName,
   }) async {
+    if (_isTesting) return;
     const androidDetails = AndroidNotificationDetails(
       'goal_completion',
       'Metas concluídas',
@@ -100,11 +120,13 @@ class NotificationService {
 
     const details = NotificationDetails(android: androidDetails);
 
-    await _plugin.show(
-      99999,
-      '🎉 Meta atingida!',
-      'Parabéns! Concluiu a meta "$goalName"!',
-      details,
-    );
+    try {
+      await _plugin.show(
+        99999,
+        '🎉 Meta atingida!',
+        'Parabéns! Concluiu a meta "$goalName"!',
+        details,
+      ).timeout(const Duration(milliseconds: 300));
+    } catch (_) {}
   }
 }

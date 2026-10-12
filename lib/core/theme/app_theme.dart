@@ -1,66 +1,96 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Paleta Base
-  static const Color _primary = Color(0xFF10B981); // Emerald Vibrante
-  static const Color _secondary = Color(0xFF3B82F6); // Azul
+  // Paleta Soft 3D Base
+  static const Color primary = Color(0xFF2E7D32); // Verde Ação Médio
+  static const Color primaryDark = Color(0xFF1B5E20); // Verde Floresta Profundo
+  static const Color primaryMid = Color(0xFF388E3C);
+  static const Color primaryLight = Color(0xFF66BB6A);
+  static const Color primaryPale = Color(0xFFE8F5E9);
+  static const Color secondary = Color(0xFF0284C7); // Azul Sky
+  static const Color warning = Color(0xFFF9A825); // Ouro Âmbar Gamificado
+  static const Color warningGold = Color(0xFFFFD600);
+  static const Color success = Color(0xFF00C853);
+  static const Color error = Color(0xFFE53935);
 
   // Cores Light
-  static const Color _bgLight = Color(0xFFF8FAFC);
-  static const Color _cardLight = Colors.white;
-  static const Color _textMainLight = Color(0xFF0F172A);
-  static const Color _textMutedLight = Color(0xFF64748B);
+  static const Color bgLight = Color(0xFFF5F5F5); // Off-white descansado
+  static const Color cardLight = Colors.white;
+  static const Color textMainLight = Color(0xFF1A1A1A);
+  static const Color textMutedLight = Color(0xFF757575);
 
-  // Cores Dark
-  static const Color _bgDark = Color(0xFF0F172A); // Slate 900
-  static const Color _cardDark = Color(0xFF1E293B); // Slate 800
-  static const Color _textMainDark = Color(0xFFF8FAFC); // Slate 50
-  static const Color _textMutedDark = Color(0xFF94A3B8); // Slate 400
+  // Cores Dark (Floresta Noturna)
+  static const Color bgDark = Color(0xFF0D1F14); // Verde noturno profundo
+  static const Color cardDark = Color(0xFF1B2E22); // Verde musgo
+  static const Color cardDarkElevated = Color(0xFF243B2A);
+  static const Color primaryNeonDark = Color(0xFF00C853); // Verde luminescente
+  static const Color primaryAccentDark = Color(0xFF69F0AE);
+  static const Color textMainDark = Color(0xFFFFFFFF);
+  static const Color textMutedDark = Color(0xFFA5D6A7);
 
   static ThemeData get light {
     final base = ColorScheme.fromSeed(
-      seedColor: _primary,
+      seedColor: primary,
       brightness: Brightness.light,
-      primary: _primary,
-      secondary: _secondary,
-      surface: _bgLight,
+      primary: primary,
+      secondary: secondary,
+      surface: bgLight,
     );
 
-    return _buildTheme(base, _bgLight, _cardLight, _textMainLight,
-        _textMutedLight, _textMainLight);
+    return _buildTheme(
+      base: base,
+      bg: bgLight,
+      card: cardLight,
+      textMain: textMainLight,
+      textMuted: textMutedLight,
+      fabColor: primary,
+      isDark: false,
+    );
   }
 
   static ThemeData get dark {
     final base = ColorScheme.fromSeed(
-      seedColor: _primary,
+      seedColor: primaryNeonDark,
       brightness: Brightness.dark,
-      primary: _primary,
-      secondary: _secondary,
-      surface: _bgDark,
+      primary: primaryNeonDark,
+      secondary: secondary,
+      surface: bgDark,
     );
 
-    // No tema escuro, os botões e FAB ficam com a cor primária (Verde) para melhor contraste
     return _buildTheme(
-        base, _bgDark, _cardDark, _textMainDark, _textMutedDark, _primary);
+      base: base,
+      bg: bgDark,
+      card: cardDark,
+      textMain: textMainDark,
+      textMuted: textMutedDark,
+      fabColor: primaryNeonDark,
+      isDark: true,
+    );
   }
 
-  // Método auxiliar para não duplicar código na construção de temas
-  static ThemeData _buildTheme(ColorScheme base, Color bg, Color card,
-      Color textMain, Color textMuted, Color fabColor) {
+  static ThemeData _buildTheme({
+    required ColorScheme base,
+    required Color bg,
+    required Color card,
+    required Color textMain,
+    required Color textMuted,
+    required Color fabColor,
+    required bool isDark,
+  }) {
     return ThemeData(
       useMaterial3: true,
       colorScheme: base,
       scaffoldBackgroundColor: bg,
-      fontFamily: 'Inter',
       appBarTheme: AppBarTheme(
-        backgroundColor: bg,
+        backgroundColor: Colors.transparent,
         foregroundColor: textMain,
         elevation: 0,
         centerTitle: false,
         scrolledUnderElevation: 0,
         titleTextStyle: TextStyle(
+          fontFamily: 'Poppins',
           color: textMain,
-          fontSize: 22,
+          fontSize: 20,
           fontWeight: FontWeight.bold,
           letterSpacing: -0.5,
         ),
@@ -75,101 +105,115 @@ class AppTheme {
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: fabColor,
         foregroundColor: Colors.white,
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        extendedPadding: const EdgeInsets.symmetric(horizontal: 24),
-        extendedTextStyle:
-            const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+        elevation: 6,
+        shape: const CircleBorder(),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: _primary,
+          backgroundColor: isDark ? primaryNeonDark : primary,
           foregroundColor: Colors.white,
           elevation: 0,
-          minimumSize: const Size(double.infinity, 56),
+          minimumSize: const Size(double.infinity, 54),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           textStyle: const TextStyle(
-              fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: 0.2),
+              fontFamily: 'Poppins',
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.2),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: card,
+        fillColor: isDark ? cardDarkElevated : const Color(0xFFF8FAFC),
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
+          borderSide: BorderSide(
+              color: isDark ? const Color(0xFF243B2A) : const Color(0xFFE2E8F0)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
+          borderSide: BorderSide(
+              color: isDark ? const Color(0xFF243B2A) : const Color(0xFFE2E8F0)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: _primary, width: 2),
+          borderSide: BorderSide(color: isDark ? primaryNeonDark : primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
         ),
         labelStyle: TextStyle(color: textMuted),
-        hintStyle: TextStyle(color: textMuted.withValues(alpha: 0.6)),
+        hintStyle: TextStyle(color: textMuted.withValues(alpha: 0.7)),
       ),
       textTheme: TextTheme(
         headlineLarge: TextStyle(
+            fontFamily: 'Poppins',
             fontSize: 32,
             fontWeight: FontWeight.w800,
             color: textMain,
             letterSpacing: -1),
         headlineMedium: TextStyle(
-            fontSize: 24,
+            fontFamily: 'Poppins',
+            fontSize: 22,
             fontWeight: FontWeight.bold,
             color: textMain,
             letterSpacing: -0.5),
         headlineSmall: TextStyle(
-            fontSize: 18, fontWeight: FontWeight.w600, color: textMain),
+            fontFamily: 'Poppins',
+            fontSize: 17,
+            fontWeight: FontWeight.bold,
+            color: textMain),
+        titleMedium: TextStyle(
+            fontFamily: 'Poppins',
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: textMain),
         bodyLarge: TextStyle(
-            fontSize: 16, color: textMain, fontWeight: FontWeight.w500),
-        bodyMedium: TextStyle(fontSize: 14, color: textMuted),
-        bodySmall: TextStyle(fontSize: 13, color: textMuted),
-      ),
-      popupMenuTheme: PopupMenuThemeData(
-        color: card,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        textStyle: TextStyle(color: textMain, fontWeight: FontWeight.w500),
+            fontFamily: 'Nunito',
+            fontSize: 16,
+            color: textMain,
+            fontWeight: FontWeight.w600),
+        bodyMedium: TextStyle(
+            fontFamily: 'Nunito',
+            fontSize: 14,
+            color: textMuted,
+            fontWeight: FontWeight.w500),
+        bodySmall: TextStyle(
+            fontFamily: 'Nunito',
+            fontSize: 12,
+            color: textMuted,
+            fontWeight: FontWeight.w500),
       ),
     );
   }
 
   static const List<Color> goalColors = [
-    Color(0xFF10B981),
-    Color(0xFF3B82F6),
-    Color(0xFF8B5CF6),
-    Color(0xFFF43F5E),
+    Color(0xFF2E7D32),
+    Color(0xFF0284C7),
+    Color(0xFF7C3AED),
     Color(0xFFF59E0B),
-    Color(0xFF06B6D4),
-    Color(0xFF14B8A6),
-    Color(0xFFEC4899),
+    Color(0xFFE11D48),
+    Color(0xFF0D9488),
+    Color(0xFF1B5E20),
+    Color(0xFFD97706),
   ];
 
   static const List<IconData> goalIcons = [
-    Icons.savings_rounded,
+    Icons.sports_esports_rounded,
     Icons.flight_takeoff_rounded,
     Icons.directions_car_rounded,
     Icons.home_work_rounded,
+    Icons.savings_rounded,
     Icons.school_rounded,
     Icons.favorite_rounded,
-    Icons.sports_esports_rounded,
+    Icons.laptop_mac_rounded,
     Icons.shopping_bag_rounded,
-    Icons.restaurant_rounded,
     Icons.fitness_center_rounded,
     Icons.beach_access_rounded,
-    Icons.laptop_mac_rounded,
-    Icons.celebration_rounded,
     Icons.pets_rounded,
-    Icons.monitor_heart_rounded,
-    Icons.headset_rounded,
   ];
 }

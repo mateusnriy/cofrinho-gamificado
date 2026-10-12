@@ -7,6 +7,9 @@ import 'package:cofrinho_digital/data/models/goal_model.dart';
 import 'package:cofrinho_digital/data/models/deposit_model.dart';
 import 'package:cofrinho_digital/data/repositories/goal_repository.dart';
 import 'package:cofrinho_digital/data/repositories/deposit_repository.dart';
+import 'package:cofrinho_digital/data/repositories/gamification_repository.dart';
+import 'package:cofrinho_digital/data/repositories/wallet_repository.dart';
+import 'package:cofrinho_digital/data/repositories/mascot_repository.dart';
 import 'package:cofrinho_digital/core/providers/global_providers.dart';
 import 'package:cofrinho_digital/features/deposit/deposit_screen.dart';
 
@@ -14,6 +17,9 @@ void main() {
   late Directory tempDir;
   late GoalRepository goalRepo;
   late DepositRepository depositRepo;
+  late GamificationRepository gamificationRepo;
+  late WalletRepository walletRepo;
+  late MascotRepository mascotRepo;
   late GoalModel testGoal;
 
   setUp(() async {
@@ -28,9 +34,16 @@ void main() {
     await Hive.openBox('settings');
     await Hive.openBox<GoalModel>('goals');
     await Hive.openBox<DepositModel>('deposits');
+    await Hive.openBox('gamification');
+    await Hive.openBox('wallet');
+    await Hive.openBox('badges');
+    await Hive.openBox('mascot_box');
 
     goalRepo = GoalRepository();
     depositRepo = DepositRepository();
+    gamificationRepo = GamificationRepository();
+    walletRepo = WalletRepository();
+    mascotRepo = MascotRepository();
 
     testGoal = GoalModel(
       id: 'goal-dep-1',
@@ -46,10 +59,14 @@ void main() {
   });
 
   tearDown(() async {
-    await Hive.close();
-    if (await tempDir.exists()) {
-      await tempDir.delete(recursive: true);
-    }
+    try {
+      await Hive.close().timeout(const Duration(milliseconds: 200), onTimeout: () => null);
+    } catch (_) {}
+    try {
+      if (await tempDir.exists()) {
+        await tempDir.delete(recursive: true);
+      }
+    } catch (_) {}
   });
 
   Widget createWidgetUnderTest({GoalModel? goal}) {
@@ -57,6 +74,9 @@ void main() {
       overrides: [
         goalRepositoryProvider.overrideWithValue(goalRepo),
         depositRepositoryProvider.overrideWithValue(depositRepo),
+        gamificationRepositoryProvider.overrideWithValue(gamificationRepo),
+        walletRepositoryProvider.overrideWithValue(walletRepo),
+        mascotRepositoryProvider.overrideWithValue(mascotRepo),
       ],
       child: MaterialApp(
         home: Scaffold(
@@ -141,6 +161,10 @@ void main() {
     testWidgets(
         'Confirmar depósito válido deve salvar registro, atualizar meta e exibir feedback',
         (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(800, 1000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();
 
@@ -151,8 +175,22 @@ void main() {
       // Toca no botão Confirmar Depósito
       final buttonFinder =
           find.widgetWithText(ElevatedButton, 'Confirmar Depósito');
+      await tester.ensureVisible(buttonFinder);
       await tester.tap(buttonFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      // Aguarda o processamento assíncrono do Hive no runAsync
+      await tester.runAsync(() async {
+        for (int i = 0; i < 200; i++) {
+          await Future.delayed(const Duration(milliseconds: 50));
+          if (goalRepo.getById(testGoal.id)?.savedAmount == 200.0) {
+            await Future.delayed(const Duration(milliseconds: 200));
+            break;
+          }
+        }
+      });
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verifica que o depósito foi persistido no repositório
       final deposits = depositRepo.getByGoal(testGoal.id);
@@ -162,6 +200,21 @@ void main() {
       // Verifica que a meta teve seu saldo acumulado incrementado (100 + 100 = 200)
       final updatedGoal = goalRepo.getById(testGoal.id);
       expect(updatedGoal?.savedAmount, equals(200.0));
+
+      // Se houver botão Continuar, toca para fechar o overlay imediatamente
+      final continuarBtn = find.text('Continuar ✨');
+      if (continuarBtn.evaluate().isNotEmpty) {
+        await tester.tap(continuarBtn);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+      } else {
+        // Aguarda auto-dismiss do overlay (2.2s) e animação de fade (300ms)
+        await tester.pump(const Duration(milliseconds: 2300));
+        await tester.pump(const Duration(milliseconds: 300));
+      }
+
+      // Aguarda o encerramento do SnackBar aberto
+      await tester.pump(const Duration(seconds: 5));
     });
   });
 }
