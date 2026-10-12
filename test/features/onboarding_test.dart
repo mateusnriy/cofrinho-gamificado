@@ -51,8 +51,9 @@ void main() {
     await tester.pumpWidget(createWidgetUnderTest());
     await tester.pumpAndSettle();
 
-    // Valida título
-    expect(find.textContaining('Bem-vindo ao\nCofrinho Digital!'), findsOneWidget);
+    // Valida título e subtítulo com o branding Oinc
+    expect(find.textContaining('Bem-vindo ao Oinc!'), findsOneWidget);
+    expect(find.text('Oinc — Meu cofrinho virtual'), findsOneWidget);
 
     // Valida os 3 benefícios centrais
     expect(find.text('Metas com Propósito'), findsOneWidget);

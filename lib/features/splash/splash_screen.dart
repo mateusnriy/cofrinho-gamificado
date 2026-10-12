@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import '../../data/models/mascot_model.dart';
+import '../../widgets/porko_canvas_widget.dart';
 import '../home/home_screen.dart';
 import '../onboarding/onboarding_screen.dart';
 
@@ -35,23 +37,22 @@ class _SplashScreenState extends State<SplashScreen>
       curve: const Interval(0.0, 0.7, curve: Curves.easeIn),
     );
 
-    _scaleAnim = Tween<double>(begin: 0.6, end: 1.0).animate(
+    _scaleAnim = Tween<double>(begin: 0.75, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.0, 0.8, curve: Curves.easeOutBack),
+        curve: const Interval(0.0, 0.85, curve: Curves.easeOutBack),
       ),
     );
 
     _subtitleFadeAnim = CurvedAnimation(
       parent: _controller,
-      curve: const Interval(0.5, 1.0, curve: Curves.easeIn),
+      curve: const Interval(0.45, 1.0, curve: Curves.easeIn),
     );
 
     _controller.forward();
   }
 
   Future<void> _initAndNavigate() async {
-    // Aguardamos a animação suave da splash
     await Future.delayed(const Duration(milliseconds: 1800));
 
     if (mounted) {
@@ -84,68 +85,121 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF10B981),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            FadeTransition(
-              opacity: _fadeAnim,
-              child: ScaleTransition(
-                scale: _scaleAnim,
-                child: Container(
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Color(0xFF1B5E20),
+              Color(0xFF2E7D32),
+              Color(0xFF10B981),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  FadeTransition(
+                    opacity: _fadeAnim,
+                    child: ScaleTransition(
+                      scale: _scaleAnim,
+                      child: Container(
+                        width: 168,
+                        height: 168,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: [
+                              Colors.white.withValues(alpha: 0.28),
+                              Colors.white.withValues(alpha: 0.08),
+                            ],
+                          ),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.32),
+                            width: 2,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.22),
+                              blurRadius: 28,
+                              offset: const Offset(0, 12),
+                            ),
+                          ],
+                        ),
+                        child: const Center(
+                          child: PorkoCanvasWidget(
+                            mood: PorkoMood.happy,
+                            mascot: MascotModel(),
+                            compact: true,
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
-                  child: const Icon(
-                    Icons.savings_rounded,
-                    size: 56,
-                    color: Colors.white,
+                  const SizedBox(height: 24),
+                  FadeTransition(
+                    opacity: _fadeAnim,
+                    child: const Text(
+                      'Oinc!',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        color: Colors.white,
+                        fontSize: 38,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.5,
+                        height: 1.05,
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 6),
+                  FadeTransition(
+                    opacity: _subtitleFadeAnim,
+                    child: const Text(
+                      'Oinc — Meu cofrinho virtual',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        color: Color(0xFFA7F3D0),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  FadeTransition(
+                    opacity: _subtitleFadeAnim,
+                    child: Text(
+                      'Suas metas, seu ritmo • 100% livre de culpa',
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        color: Colors.white.withValues(alpha: 0.80),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 48),
+                  FadeTransition(
+                    opacity: _subtitleFadeAnim,
+                    child: SizedBox(
+                      width: 26,
+                      height: 26,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Colors.white.withValues(alpha: 0.75),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 24),
-            FadeTransition(
-              opacity: _fadeAnim,
-              child: const Text(
-                'Cofrinho Digital',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            FadeTransition(
-              opacity: _subtitleFadeAnim,
-              child: const Text(
-                'Suas metas, seu ritmo.',
-                style: TextStyle(
-                  color: Colors.white60,
-                  fontSize: 15,
-                  letterSpacing: 0.3,
-                ),
-              ),
-            ),
-            const SizedBox(height: 60),
-            FadeTransition(
-              opacity: _subtitleFadeAnim,
-              child: SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white.withValues(alpha: 0.5),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
