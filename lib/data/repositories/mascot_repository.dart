@@ -30,9 +30,9 @@ class MascotRepository {
     final daysPassed = now.difference(mascot.lastInteractedAt!).inDays;
 
     if (daysPassed > 0) {
-      // Perde 5% de felicidade ao dia sem passar do chão seguro de 40%
+      // Perde 5% de felicidade e 4% de energia ao dia sem passar do chão seguro de 40%
       final newHappiness = (mascot.happiness - (daysPassed * 5.0)).clamp(40.0, 100.0);
-      final newEnergy = (mascot.energy - (daysPassed * 4.0)).clamp(35.0, 100.0);
+      final newEnergy = (mascot.energy - (daysPassed * 4.0)).clamp(40.0, 100.0);
       return mascot.copyWith(
         happiness: newHappiness,
         energy: newEnergy,

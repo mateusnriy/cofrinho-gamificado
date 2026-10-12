@@ -230,7 +230,8 @@ class _BadgesGalleryScreenState extends ConsumerState<BadgesGalleryScreen> {
 
     final streakDays = (streakData['currentStreak'] as int?) ?? 0;
     final totalSaved = (stats['totalSaved'] as double?) ?? 0.0;
-    final completedGoals = (stats['completedGoals'] as int?) ?? 0;
+    final completedGoals =
+        (stats['completed'] as int?) ?? (stats['completedGoals'] as int?) ?? 0;
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF0D1F14) : const Color(0xFFF5F5F5),
@@ -393,19 +394,25 @@ class _BadgesGalleryScreenState extends ConsumerState<BadgesGalleryScreen> {
               const SizedBox(height: 12),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: 0.76,
-                  ),
-                  itemCount: unlockedBadges.length,
-                  itemBuilder: (context, index) {
-                    final badge = unlockedBadges[index];
-                    return _buildUnlockedBadgeItem(badge, isDark);
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final cols = constraints.maxWidth > 520 ? 4 : 3;
+                    final aspect = constraints.maxWidth < 330 ? 0.68 : 0.76;
+                    return GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: cols,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 16,
+                        childAspectRatio: aspect,
+                      ),
+                      itemCount: unlockedBadges.length,
+                      itemBuilder: (context, index) {
+                        final badge = unlockedBadges[index];
+                        return _buildUnlockedBadgeItem(badge, isDark);
+                      },
+                    );
                   },
                 ),
               ),
@@ -426,13 +433,17 @@ class _BadgesGalleryScreenState extends ConsumerState<BadgesGalleryScreen> {
                     ),
                   ),
                   const SizedBox(width: 6),
-                  Text(
-                    '(toque para ver como)',
-                    style: TextStyle(
-                      fontFamily: 'Nunito',
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white60 : const Color(0xFF566259),
+                  Flexible(
+                    child: Text(
+                      '(toque para ver como)',
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color:
+                            isDark ? Colors.white60 : const Color(0xFF566259),
+                      ),
                     ),
                   ),
                 ],
@@ -451,19 +462,25 @@ class _BadgesGalleryScreenState extends ConsumerState<BadgesGalleryScreen> {
             const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: 0.76,
-                ),
-                itemCount: lockedBadges.length,
-                itemBuilder: (context, index) {
-                  final badge = lockedBadges[index];
-                  return _buildLockedBadgeItem(badge, isDark);
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final cols = constraints.maxWidth > 520 ? 4 : 3;
+                  final aspect = constraints.maxWidth < 330 ? 0.68 : 0.76;
+                  return GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: cols,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 16,
+                      childAspectRatio: aspect,
+                    ),
+                    itemCount: lockedBadges.length,
+                    itemBuilder: (context, index) {
+                      final badge = lockedBadges[index];
+                      return _buildLockedBadgeItem(badge, isDark);
+                    },
+                  );
                 },
               ),
             ),
