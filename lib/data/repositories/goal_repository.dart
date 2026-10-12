@@ -10,25 +10,29 @@ class GoalRepository {
 
   // Pega todas as metas ativas organizadas pela ordem escolhida
   List<GoalModel> getActive({SortOrder order = SortOrder.createdAt}) {
-    final goals = _box.values
-        .where((g) => !g.isArchived)
-        .toList();
+    final goals = _box.values.where((g) => !g.isArchived).toList();
+    return sortGoals(goals, order);
+  }
 
+  /// Ordena uma lista de metas pelo critério selecionado
+  List<GoalModel> sortGoals(List<GoalModel> goals, SortOrder order) {
+    final sorted = List<GoalModel>.from(goals);
     switch (order) {
       case SortOrder.deadline:
-        goals.sort((a, b) {
+        sorted.sort((a, b) {
           if (a.deadline == null && b.deadline == null) return 0;
           if (a.deadline == null) return 1;
           if (b.deadline == null) return -1;
           return a.deadline!.compareTo(b.deadline!);
         });
       case SortOrder.progress:
-        goals.sort((a, b) => b.progress.compareTo(a.progress));
+        sorted.sort((a, b) => b.progress.compareTo(a.progress));
+      case SortOrder.savedAmount:
+        sorted.sort((a, b) => b.savedAmount.compareTo(a.savedAmount));
       case SortOrder.createdAt:
-        goals.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        sorted.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     }
-
-    return goals;
+    return sorted;
   }
 
   /// Retorna todas as metas (ativas e arquivadas)
@@ -116,6 +120,7 @@ class GoalRepository {
       'totalTarget': totalTarget,
       'totalSaved': totalSaved,
       'completed': completed,
+      'completedGoals': completed,
       'overallProgress': totalTarget > 0
           ? (totalSaved / totalTarget).clamp(0.0, 1.0)
           : 0.0,
@@ -123,4 +128,13 @@ class GoalRepository {
   }
 }
 
-enum SortOrder { createdAt, deadline, progress }
+enum SortOrder { createdAt, deadline, progress, savedAmount }
+
+enum GoalFilter {
+  all,
+  inProgress,
+  completed,
+  withDeadline,
+  freePace,
+  archived,
+}
