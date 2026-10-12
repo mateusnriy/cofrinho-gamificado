@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/global_providers.dart';
 import '../../data/models/mascot_model.dart';
+import '../../widgets/porko_canvas_widget.dart';
 import '../shop/porko_store_screen.dart';
 
 // Tela do Cantinho do Mascote idêntica ao protótipo v3 (cuidados com afeto, bem-estar anti-culpa e personalização)
@@ -14,16 +16,32 @@ class MascotScreen extends ConsumerStatefulWidget {
 }
 
 class _MascotScreenState extends ConsumerState<MascotScreen> {
-  // Limites e contadores locais dos 4 cuidados diários conforme especificado
+  // Limites e contadores locais dos 4 cuidados diários conforme especificado (Decisão 6.2)
   int _petCount = 0;
   int _feedCount = 0;
   int _playCount = 0;
   int _callCount = 0;
+  String? _activeReaction;
+  Timer? _reactionTimer;
 
   static const int _petMax = 3;
   static const int _feedMax = 2;
   static const int _playMax = 2;
   static const int _callMax = 3;
+
+  @override
+  void dispose() {
+    _reactionTimer?.cancel();
+    super.dispose();
+  }
+
+  void _triggerReaction(String reaction) {
+    _reactionTimer?.cancel();
+    setState(() => _activeReaction = reaction);
+    _reactionTimer = Timer(const Duration(milliseconds: 950), () {
+      if (mounted) setState(() => _activeReaction = null);
+    });
+  }
 
   // Abre diálogo simples para alterar o nome do mascote
   void _openRenameDialog(BuildContext context, MascotModel mascot) {
@@ -47,7 +65,8 @@ class _MascotScreenState extends ConsumerState<MascotScreen> {
           decoration: InputDecoration(
             hintText: 'Dê um nome ao seu Porko...',
             filled: true,
-            fillColor: isDark ? const Color(0xFF243B2A) : const Color(0xFFEEF3EE),
+            fillColor:
+                isDark ? const Color(0xFF243B2A) : const Color(0xFFEEF3EE),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide.none,
@@ -84,7 +103,9 @@ class _MascotScreenState extends ConsumerState<MascotScreen> {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFBE185D),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
             ),
             child: const Text('Salvar', style: TextStyle(color: Colors.white)),
           ),
@@ -98,6 +119,7 @@ class _MascotScreenState extends ConsumerState<MascotScreen> {
     required String actionKey,
     required String label,
     required String emoji,
+    required String reactionType,
     required Future<bool> Function() action,
   }) async {
     HapticFeedback.mediumImpact();
@@ -124,13 +146,15 @@ class _MascotScreenState extends ConsumerState<MascotScreen> {
           content: Text('Limite de $label atingido por hoje! 💤'),
           behavior: SnackBarBehavior.floating,
           duration: const Duration(milliseconds: 1500),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
       return;
     }
 
-    setState(() {});
+    _triggerReaction(reactionType);
     await action();
 
     if (mounted) {
@@ -139,7 +163,9 @@ class _MascotScreenState extends ConsumerState<MascotScreen> {
           content: Text('$emoji O Porko adorou!'),
           behavior: SnackBarBehavior.floating,
           duration: const Duration(milliseconds: 1500),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
     }
@@ -149,9 +175,9 @@ class _MascotScreenState extends ConsumerState<MascotScreen> {
   Future<void> _applySkin(String skinId) async {
     HapticFeedback.selectionClick();
     await ref.read(mascotRepositoryProvider).equipItem(
-      category: 'skin',
-      itemId: skinId,
-    );
+          category: 'skin',
+          itemId: skinId,
+        );
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -166,22 +192,24 @@ class _MascotScreenState extends ConsumerState<MascotScreen> {
   @override
   Widget build(BuildContext context) {
     final mascot = ref.watch(equippedMascotProvider);
+    final mood = ref.watch(porkoMoodProvider);
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    // Respeita estritamente o piso inegociável de 40% de felicidade e 35% de energia
+    // Respeita estritamente o piso inegociável de 40% de felicidade e 40% de energia (Decisão 6.1 / AUD-16)
     final happinessPct = (mascot.happiness.clamp(40.0, 100.0)).round();
-    final energyPct = (mascot.energy.clamp(35.0, 100.0)).round();
+    final energyPct = (mascot.energy.clamp(40.0, 100.0)).round();
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0D1F14) : const Color(0xFFF5F5F5),
+      backgroundColor:
+          isDark ? const Color(0xFF0D1F14) : const Color(0xFFF5F5F5),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.only(bottom: 100),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ── 1. Header Magenta com Cantos de 36dp e Avatar Integrado ──────
+            // ── 1. Header Magenta com Cantos de 36dp e Avatar Soft 3D ─────────
             Semantics(
               label: 'Cantinho do Mascote',
               child: Container(
@@ -189,16 +217,26 @@ class _MascotScreenState extends ConsumerState<MascotScreen> {
                 decoration: BoxDecoration(
                   gradient: isDark
                       ? const LinearGradient(
-                          colors: [Color(0xFF831843), Color(0xFF9D174D), Color(0xFFBE185D)],
+                          colors: [
+                            Color(0xFF831843),
+                            Color(0xFF9D174D),
+                            Color(0xFFBE185D),
+                          ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         )
                       : const LinearGradient(
-                          colors: [Color(0xFFBE185D), Color(0xFFEC4899), Color(0xFFF472B6)],
+                          colors: [
+                            Color(0xFFBE185D),
+                            Color(0xFFEC4899),
+                            Color(0xFFF472B6),
+                          ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
-                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(36)),
+                  borderRadius: const BorderRadius.vertical(
+                    bottom: Radius.circular(36),
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.18),
@@ -221,28 +259,26 @@ class _MascotScreenState extends ConsumerState<MascotScreen> {
                     ),
                     const SizedBox(height: 14),
 
-                    // Card translúcido integrado do mascote
+                    // Card translúcido integrado do mascote com Porko Soft 3D ao vivo
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.20),
                         borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.30)),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.30),
+                        ),
                       ),
                       child: Row(
                         children: [
-                          // Avatar esférico com degradê radial Soft 3D
+                          // Mini-palco circular com o Porko Soft 3D reagindo aos cuidados
                           Container(
-                            width: 60,
-                            height: 60,
-                            decoration: const BoxDecoration(
+                            width: 68,
+                            height: 68,
+                            decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              gradient: RadialGradient(
-                                center: Alignment(-0.3, -0.4),
-                                radius: 0.9,
-                                colors: [Color(0xFFFFD1DC), Color(0xFFFF8DA1), Color(0xFFE06079)],
-                              ),
-                              boxShadow: [
+                              color: Colors.white.withValues(alpha: 0.22),
+                              boxShadow: const [
                                 BoxShadow(
                                   color: Colors.black26,
                                   blurRadius: 8,
@@ -250,8 +286,16 @@ class _MascotScreenState extends ConsumerState<MascotScreen> {
                                 ),
                               ],
                             ),
-                            child: const Center(
-                              child: Text('🐷', style: TextStyle(fontSize: 32)),
+                            child: ClipOval(
+                              child: Center(
+                                child: PorkoCanvasWidget(
+                                  mood: mood,
+                                  mascot: mascot,
+                                  compact: true,
+                                  activeReaction: _activeReaction,
+                                  onTap: () => _triggerReaction('jump'),
+                                ),
+                              ),
                             ),
                           ),
                           const SizedBox(width: 14),
@@ -278,13 +322,19 @@ class _MascotScreenState extends ConsumerState<MascotScreen> {
                                     ),
                                     const SizedBox(width: 8),
                                     InkWell(
-                                      onTap: () => _openRenameDialog(context, mascot),
+                                      onTap: () =>
+                                          _openRenameDialog(context, mascot),
                                       borderRadius: BorderRadius.circular(20),
                                       child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 4,
+                                        ),
                                         decoration: BoxDecoration(
-                                          color: Colors.white.withValues(alpha: 0.30),
-                                          borderRadius: BorderRadius.circular(20),
+                                          color: Colors.white
+                                              .withValues(alpha: 0.30),
+                                          borderRadius:
+                                              BorderRadius.circular(20),
                                         ),
                                         child: const Text(
                                           'Renomear ✏️',
@@ -330,11 +380,13 @@ class _MascotScreenState extends ConsumerState<MascotScreen> {
                   color: isDark ? const Color(0xFF1B2E22) : Colors.white,
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: isDark ? const Color(0xFF2F4A37) : const Color(0xFFE2E8E2),
+                    color:
+                        isDark ? const Color(0xFF2F4A37) : const Color(0xFFE2E8E2),
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
+                      color:
+                          Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -360,7 +412,9 @@ class _MascotScreenState extends ConsumerState<MascotScreen> {
                             fontFamily: 'Nunito',
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
-                            color: isDark ? const Color(0xFFA5D6A7) : const Color(0xFF566259),
+                            color: isDark
+                                ? const Color(0xFFA5D6A7)
+                                : const Color(0xFF566259),
                           ),
                         ),
                       ],
@@ -394,7 +448,9 @@ class _MascotScreenState extends ConsumerState<MascotScreen> {
                       borderRadius: BorderRadius.circular(8),
                       child: Container(
                         height: 10,
-                        color: isDark ? const Color(0xFF243B2A) : const Color(0xFFEEF3EE),
+                        color: isDark
+                            ? const Color(0xFF243B2A)
+                            : const Color(0xFFEEF3EE),
                         child: FractionallySizedBox(
                           alignment: Alignment.centerLeft,
                           widthFactor: (happinessPct / 100.0).clamp(0.0, 1.0),
@@ -411,7 +467,7 @@ class _MascotScreenState extends ConsumerState<MascotScreen> {
 
                     const SizedBox(height: 14),
 
-                    // Barra de Energia (mínimo 35%)
+                    // Barra de Energia (mínimo 40%)
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -438,7 +494,9 @@ class _MascotScreenState extends ConsumerState<MascotScreen> {
                       borderRadius: BorderRadius.circular(8),
                       child: Container(
                         height: 10,
-                        color: isDark ? const Color(0xFF243B2A) : const Color(0xFFEEF3EE),
+                        color: isDark
+                            ? const Color(0xFF243B2A)
+                            : const Color(0xFFEEF3EE),
                         child: FractionallySizedBox(
                           alignment: Alignment.centerLeft,
                           widthFactor: (energyPct / 100.0).clamp(0.0, 1.0),
@@ -459,7 +517,9 @@ class _MascotScreenState extends ConsumerState<MascotScreen> {
                       style: TextStyle(
                         fontFamily: 'Nunito',
                         fontSize: 11,
-                        color: isDark ? const Color(0xFFA5D6A7) : const Color(0xFF566259),
+                        color: isDark
+                            ? const Color(0xFFA5D6A7)
+                            : const Color(0xFF566259),
                         height: 1.3,
                       ),
                     ),
@@ -470,7 +530,7 @@ class _MascotScreenState extends ConsumerState<MascotScreen> {
 
             const SizedBox(height: 20),
 
-            // ── 3. Seção "Cuidados de hoje" (4 Ações com Limites Diários) ────
+            // ── 3. Seção "Cuidados de hoje" (Grid 2x2 Responsivo — AUD-07) ──
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 20),
               child: Text(
@@ -486,77 +546,93 @@ class _MascotScreenState extends ConsumerState<MascotScreen> {
 
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
+              child: Column(
                 children: [
-                  // Ação 1: Acariciar
-                  Expanded(
-                    child: _buildCareActionItem(
-                      emoji: '❤️',
-                      label: 'Acariciar',
-                      count: _petCount,
-                      max: _petMax,
-                      isDark: isDark,
-                      onTap: () => _handleCareAction(
-                        actionKey: 'pet',
-                        label: 'Acariciar',
-                        emoji: '❤️',
-                        action: () => ref.read(mascotRepositoryProvider).petMascot(),
+                  Row(
+                    children: [
+                      // Ação 1: Acariciar
+                      Expanded(
+                        child: _buildCareActionItem(
+                          emoji: '❤️',
+                          label: 'Acariciar',
+                          count: _petCount,
+                          max: _petMax,
+                          isDark: isDark,
+                          onTap: () => _handleCareAction(
+                            actionKey: 'pet',
+                            label: 'Acariciar',
+                            emoji: '❤️',
+                            reactionType: 'love',
+                            action: () =>
+                                ref.read(mascotRepositoryProvider).petMascot(),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
+                      const SizedBox(width: 10),
 
-                  // Ação 2: Alimentar
-                  Expanded(
-                    child: _buildCareActionItem(
-                      emoji: '🍎',
-                      label: 'Alimentar',
-                      count: _feedCount,
-                      max: _feedMax,
-                      isDark: isDark,
-                      onTap: () => _handleCareAction(
-                        actionKey: 'feed',
-                        label: 'Alimentar',
-                        emoji: '🍎',
-                        action: () => ref.read(mascotRepositoryProvider).feedMascot(),
+                      // Ação 2: Alimentar
+                      Expanded(
+                        child: _buildCareActionItem(
+                          emoji: '🍎',
+                          label: 'Alimentar',
+                          count: _feedCount,
+                          max: _feedMax,
+                          isDark: isDark,
+                          onTap: () => _handleCareAction(
+                            actionKey: 'feed',
+                            label: 'Alimentar',
+                            emoji: '🍎',
+                            reactionType: 'eat',
+                            action: () =>
+                                ref.read(mascotRepositoryProvider).feedMascot(),
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-
-                  // Ação 3: Brincar
-                  Expanded(
-                    child: _buildCareActionItem(
-                      emoji: '🎾',
-                      label: 'Brincar',
-                      count: _playCount,
-                      max: _playMax,
-                      isDark: isDark,
-                      onTap: () => _handleCareAction(
-                        actionKey: 'play',
-                        label: 'Brincar',
-                        emoji: '🎾',
-                        action: () => ref.read(mascotRepositoryProvider).playWithMascot(),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      // Ação 3: Brincar
+                      Expanded(
+                        child: _buildCareActionItem(
+                          emoji: '🎾',
+                          label: 'Brincar',
+                          count: _playCount,
+                          max: _playMax,
+                          isDark: isDark,
+                          onTap: () => _handleCareAction(
+                            actionKey: 'play',
+                            label: 'Brincar',
+                            emoji: '🎾',
+                            reactionType: 'jump',
+                            action: () => ref
+                                .read(mascotRepositoryProvider)
+                                .playWithMascot(),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
+                      const SizedBox(width: 10),
 
-                  // Ação 4: Chamar
-                  Expanded(
-                    child: _buildCareActionItem(
-                      emoji: '📣',
-                      label: 'Chamar',
-                      count: _callCount,
-                      max: _callMax,
-                      isDark: isDark,
-                      onTap: () => _handleCareAction(
-                        actionKey: 'call',
-                        label: 'Chamar',
-                        emoji: '📣',
-                        action: () => ref.read(mascotRepositoryProvider).callMascot(),
+                      // Ação 4: Chamar
+                      Expanded(
+                        child: _buildCareActionItem(
+                          emoji: '📣',
+                          label: 'Chamar',
+                          count: _callCount,
+                          max: _callMax,
+                          isDark: isDark,
+                          onTap: () => _handleCareAction(
+                            actionKey: 'call',
+                            label: 'Chamar',
+                            emoji: '📣',
+                            reactionType: 'call',
+                            action: () =>
+                                ref.read(mascotRepositoryProvider).callMascot(),
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ],
               ),
@@ -573,7 +649,8 @@ class _MascotScreenState extends ConsumerState<MascotScreen> {
                   color: isDark ? const Color(0xFF1B2E22) : Colors.white,
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: isDark ? const Color(0xFF2F4A37) : const Color(0xFFE2E8E2),
+                    color:
+                        isDark ? const Color(0xFF2F4A37) : const Color(0xFFE2E8E2),
                   ),
                 ),
                 child: Column(
@@ -588,31 +665,52 @@ class _MascotScreenState extends ConsumerState<MascotScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    // Swatches de 3 cores com degradê radial
+                    // Swatches de 3 cores com degradê radial e Expanded (.skin-row do protótipo)
                     Row(
                       children: [
-                        _buildSkinSwatch(
-                          id: 'pink_classic',
-                          label: 'Rosa Clássico',
-                          isSelected: mascot.skinId == 'pink_classic',
-                          colors: const [Color(0xFFFFD1DC), Color(0xFFFF8DA1), Color(0xFFE06079)],
-                          onTap: () => _applySkin('pink_classic'),
+                        Expanded(
+                          child: _buildSkinSwatch(
+                            id: 'pink_classic',
+                            label: 'Rosa Clássico',
+                            isSelected: mascot.skinId == 'pink_classic',
+                            isDark: isDark,
+                            colors: const [
+                              Color(0xFFFFD1DC),
+                              Color(0xFFFF8DA1),
+                              Color(0xFFE06079),
+                            ],
+                            onTap: () => _applySkin('pink_classic'),
+                          ),
                         ),
-                        const SizedBox(width: 14),
-                        _buildSkinSwatch(
-                          id: 'chocolate',
-                          label: 'Chocolate Doce',
-                          isSelected: mascot.skinId == 'chocolate',
-                          colors: const [Color(0xFFC8A58F), Color(0xFF8D6E63), Color(0xFF5D4037)],
-                          onTap: () => _applySkin('chocolate'),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _buildSkinSwatch(
+                            id: 'chocolate',
+                            label: 'Chocolate Doce',
+                            isSelected: mascot.skinId == 'chocolate',
+                            isDark: isDark,
+                            colors: const [
+                              Color(0xFFC8A58F),
+                              Color(0xFF8D6E63),
+                              Color(0xFF5D4037),
+                            ],
+                            onTap: () => _applySkin('chocolate'),
+                          ),
                         ),
-                        const SizedBox(width: 14),
-                        _buildSkinSwatch(
-                          id: 'golden',
-                          label: 'Dourado Lendário',
-                          isSelected: mascot.skinId == 'golden',
-                          colors: const [Color(0xFFFFF2A8), Color(0xFFFFD54F), Color(0xFFF59E0B)],
-                          onTap: () => _applySkin('golden'),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _buildSkinSwatch(
+                            id: 'golden',
+                            label: 'Dourado Lendário',
+                            isSelected: mascot.skinId == 'golden',
+                            isDark: isDark,
+                            colors: const [
+                              Color(0xFFFFF2A8),
+                              Color(0xFFFFD54F),
+                              Color(0xFFF59E0B),
+                            ],
+                            onTap: () => _applySkin('golden'),
+                          ),
                         ),
                       ],
                     ),
@@ -625,7 +723,9 @@ class _MascotScreenState extends ConsumerState<MascotScreen> {
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const PorkoStoreScreen()),
+                            MaterialPageRoute(
+                              builder: (_) => const PorkoStoreScreen(),
+                            ),
                           );
                         },
                         icon: const Text('👗', style: TextStyle(fontSize: 16)),
@@ -638,8 +738,11 @@ class _MascotScreenState extends ConsumerState<MascotScreen> {
                           ),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: isDark ? const Color(0xFF243B2A) : const Color(0xFFEEF3EE),
-                          foregroundColor: isDark ? Colors.white : const Color(0xFF1A1A1A),
+                          backgroundColor: isDark
+                              ? const Color(0xFF243B2A)
+                              : const Color(0xFFEEF3EE),
+                          foregroundColor:
+                              isDark ? Colors.white : const Color(0xFF1A1A1A),
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           elevation: 0,
                           shape: RoundedRectangleBorder(
@@ -664,7 +767,8 @@ class _MascotScreenState extends ConsumerState<MascotScreen> {
                   color: isDark ? const Color(0xFF1B2E22) : Colors.white,
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: isDark ? const Color(0xFF2F4A37) : const Color(0xFFE2E8E2),
+                    color:
+                        isDark ? const Color(0xFF2F4A37) : const Color(0xFFE2E8E2),
                   ),
                 ),
                 child: Column(
@@ -698,7 +802,7 @@ class _MascotScreenState extends ConsumerState<MascotScreen> {
     );
   }
 
-  // Item de botão de cuidado diário com indicador n/max
+  // Item de botão de cuidado diário em Grid 2x2 com indicador n/max
   Widget _buildCareActionItem({
     required String emoji,
     required String label,
@@ -715,12 +819,13 @@ class _MascotScreenState extends ConsumerState<MascotScreen> {
         duration: const Duration(milliseconds: 200),
         opacity: isMaxReached ? 0.45 : 1.0,
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
           decoration: BoxDecoration(
             color: isDark ? const Color(0xFF1B2E22) : Colors.white,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: isDark ? const Color(0xFF2F4A37) : const Color(0xFFE2E8E2),
+              color:
+                  isDark ? const Color(0xFF2F4A37) : const Color(0xFFE2E8E2),
             ),
             boxShadow: [
               BoxShadow(
@@ -730,27 +835,37 @@ class _MascotScreenState extends ConsumerState<MascotScreen> {
               ),
             ],
           ),
-          child: Column(
+          child: Row(
             children: [
-              Text(emoji, style: const TextStyle(fontSize: 24)),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                '$count/$max',
-                style: TextStyle(
-                  fontFamily: 'Nunito',
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? const Color(0xFFA5D6A7) : const Color(0xFF566259),
+              Text(emoji, style: const TextStyle(fontSize: 26)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '$count/$max hoje',
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: isDark
+                            ? const Color(0xFFA5D6A7)
+                            : const Color(0xFF566259),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -760,61 +875,86 @@ class _MascotScreenState extends ConsumerState<MascotScreen> {
     );
   }
 
-  // Amostra esférica de cor de pele
+  // Card de amostra esférica de cor de pele (.skin-sw do protótipo)
   Widget _buildSkinSwatch({
     required String id,
     required String label,
     required bool isSelected,
+    required bool isDark,
     required List<Color> colors,
     required VoidCallback onTap,
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(30),
+      borderRadius: BorderRadius.circular(18),
       child: Container(
-        width: 44,
-        height: 44,
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
         decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(
-            center: const Alignment(-0.3, -0.4),
-            radius: 0.9,
-            colors: colors,
-          ),
+          color: isSelected
+              ? (isDark ? const Color(0xFF132E1C) : const Color(0xFFE8F5E9))
+              : (isDark ? const Color(0xFF243B2A) : const Color(0xFFEEF3EE)),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: isSelected ? Colors.white : Colors.transparent,
-            width: isSelected ? 3 : 0,
+            color: isSelected ? const Color(0xFF2E7D32) : Colors.transparent,
+            width: 2,
           ),
-          boxShadow: isSelected
-              ? [
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  center: const Alignment(-0.3, -0.4),
+                  radius: 0.9,
+                  colors: colors,
+                ),
+                border: Border.all(
+                  color: isSelected ? Colors.white : Colors.transparent,
+                  width: isSelected ? 2.5 : 0,
+                ),
+                boxShadow: [
                   BoxShadow(
-                    color: colors.last.withValues(alpha: 0.6),
-                    blurRadius: 10,
+                    color: colors.last.withValues(alpha: 0.45),
+                    blurRadius: 8,
                     offset: const Offset(0, 3),
                   ),
-                ]
-              : null,
+                ],
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.bold,
+                fontSize: 10,
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  // Chip de traço de personalidade
-  Widget _buildTraitChip(String text, bool isDark) {
+  // Chip de traço de personalidade do Porko
+  Widget _buildTraitChip(String label, bool isDark) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF243B2A) : const Color(0xFFEEF3EE),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDark ? const Color(0xFF2F4A37) : const Color(0xFFE2E8E2),
-        ),
       ),
       child: Text(
-        text,
+        label,
         style: TextStyle(
           fontFamily: 'Nunito',
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: FontWeight.bold,
           color: isDark ? Colors.white : const Color(0xFF1A1A1A),
         ),

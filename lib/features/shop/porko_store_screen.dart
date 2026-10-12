@@ -108,13 +108,34 @@ class _PorkoStoreScreenState extends ConsumerState<PorkoStoreScreen> {
                 ),
               ),
 
-              // Mini-Palco de Preview com o Porko ao vivo
+              // Mini-Palco de Preview com o Porko Soft 3D e decorações de cenário (#prevStage — AUD-17)
               Container(
                 height: 176,
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF7DD3FC), Color(0xFF86EFAC), Color(0xFF34D399)],
+                  gradient: LinearGradient(
+                    colors: switch (previewMascot.backdropId) {
+                      'backdrop_beach' => const [
+                          Color(0xFF38BDF8),
+                          Color(0xFF7DD3FC),
+                          Color(0xFFFDE68A),
+                        ],
+                      'backdrop_park' => const [
+                          Color(0xFFA7F3D0),
+                          Color(0xFF6EE7B7),
+                          Color(0xFF15803D),
+                        ],
+                      'backdrop_night' => const [
+                          Color(0xFF0F172A),
+                          Color(0xFF1E293B),
+                          Color(0xFF064E3B),
+                        ],
+                      _ => const [
+                          Color(0xFF7DD3FC),
+                          Color(0xFF86EFAC),
+                          Color(0xFF34D399),
+                        ],
+                    },
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                   ),
@@ -127,11 +148,50 @@ class _PorkoStoreScreenState extends ConsumerState<PorkoStoreScreen> {
                     ),
                   ],
                 ),
-                child: Center(
-                  child: PorkoCanvasWidget(
-                    mood: ref.watch(porkoMoodProvider),
-                    mascot: previewMascot,
-                  ),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    if (previewMascot.backdropId == 'backdrop_beach') ...[
+                      const Positioned(
+                        left: 18,
+                        bottom: 16,
+                        child: Text('🏖️', style: TextStyle(fontSize: 28)),
+                      ),
+                      const Positioned(
+                        right: 18,
+                        bottom: 18,
+                        child: Text('🌴', style: TextStyle(fontSize: 32)),
+                      ),
+                    ] else if (previewMascot.backdropId == 'backdrop_park') ...[
+                      const Positioned(
+                        left: 18,
+                        bottom: 16,
+                        child: Text('🌳', style: TextStyle(fontSize: 30)),
+                      ),
+                      const Positioned(
+                        right: 18,
+                        bottom: 16,
+                        child: Text('🌲', style: TextStyle(fontSize: 30)),
+                      ),
+                    ] else if (previewMascot.backdropId == 'backdrop_night') ...[
+                      const Positioned(
+                        left: 18,
+                        bottom: 16,
+                        child: Text('🌆', style: TextStyle(fontSize: 28)),
+                      ),
+                      const Positioned(
+                        right: 18,
+                        top: 16,
+                        child: Text('✨', style: TextStyle(fontSize: 24)),
+                      ),
+                    ],
+                    Center(
+                      child: PorkoCanvasWidget(
+                        mood: ref.watch(porkoMoodProvider),
+                        mascot: previewMascot,
+                      ),
+                    ),
+                  ],
                 ),
               ),
 
@@ -565,37 +625,45 @@ class _PorkoStoreScreenState extends ConsumerState<PorkoStoreScreen> {
                         ),
                       ),
                     )
-                  : GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        childAspectRatio: 0.82,
-                      ),
-                      itemCount: displayedItems.length,
-                      itemBuilder: (context, index) {
-                        final item = displayedItems[index];
-                        final isOwned = inventory.contains(item.id) || item.isFree;
-                        final isEquipped = _isItemEquipped(item, mascot);
-                        final canAfford = balance >= item.price;
-
-                        return _buildItemCard(
-                          item: item,
-                          isOwned: isOwned,
-                          isEquipped: isEquipped,
-                          canAfford: canAfford,
-                          isDark: isDark,
-                          onTap: () => _openPreviewSheet(
-                            context,
-                            item,
-                            isOwned,
-                            isEquipped,
-                            canAfford,
-                            mascot,
-                            balance,
+                  : LayoutBuilder(
+                      builder: (context, constraints) {
+                        final cols = constraints.maxWidth > 540 ? 3 : 2;
+                        final aspect = constraints.maxWidth < 330 ? 0.76 : 0.84;
+                        return GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: cols,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            childAspectRatio: aspect,
                           ),
+                          itemCount: displayedItems.length,
+                          itemBuilder: (context, index) {
+                            final item = displayedItems[index];
+                            final isOwned =
+                                inventory.contains(item.id) || item.isFree;
+                            final isEquipped = _isItemEquipped(item, mascot);
+                            final canAfford = balance >= item.price;
+
+                            return _buildItemCard(
+                              item: item,
+                              isOwned: isOwned,
+                              isEquipped: isEquipped,
+                              canAfford: canAfford,
+                              isDark: isDark,
+                              onTap: () => _openPreviewSheet(
+                                context,
+                                item,
+                                isOwned,
+                                isEquipped,
+                                canAfford,
+                                mascot,
+                                balance,
+                              ),
+                            );
+                          },
                         );
                       },
                     ),
@@ -646,7 +714,8 @@ class _PorkoStoreScreenState extends ConsumerState<PorkoStoreScreen> {
               height: 54,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: isDark ? const Color(0xFF243B2A) : const Color(0xFFEEF3EE),
+                color:
+                    isDark ? const Color(0xFF243B2A) : const Color(0xFFEEF3EE),
               ),
               child: Center(
                 child: Text(
@@ -683,10 +752,16 @@ class _PorkoStoreScreenState extends ConsumerState<PorkoStoreScreen> {
                 fontWeight: FontWeight.bold,
                 fontSize: 11,
                 color: isEquipped
-                    ? (isDark ? const Color(0xFF00C853) : const Color(0xFF2E7D32))
+                    ? (isDark
+                        ? const Color(0xFF00C853)
+                        : const Color(0xFF2E7D32))
                     : isOwned
-                        ? (isDark ? const Color(0xFFA5D6A7) : const Color(0xFF566259))
-                        : (isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706)),
+                        ? (isDark
+                            ? const Color(0xFFA5D6A7)
+                            : const Color(0xFF566259))
+                        : (isDark
+                            ? const Color(0xFFFBBF24)
+                            : const Color(0xFFD97706)),
               ),
             ),
           ],
@@ -702,23 +777,31 @@ class _PorkoStoreScreenState extends ConsumerState<PorkoStoreScreen> {
       case 'chocolate':
         return '🍫';
       case 'golden':
-        return '👑';
+        return '✨';
       case 'hat_cap':
         return '🧢';
       case 'hat_crown':
         return '👑';
       case 'hat_glasses':
         return '🕶️';
+      case 'hat_wizard':
+        return '🧙';
       case 'cloth_bow':
         return '🎀';
       case 'cloth_suit':
         return '👔';
       case 'cloth_cape':
         return '🦸';
+      case 'cloth_scarf':
+        return '🧣';
+      case 'backdrop_default':
+        return '🌄';
       case 'backdrop_beach':
         return '🏖️';
       case 'backdrop_park':
         return '🌳';
+      case 'backdrop_night':
+        return '🌆';
       default:
         return '✨';
     }
