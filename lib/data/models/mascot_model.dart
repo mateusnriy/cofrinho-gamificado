@@ -62,7 +62,7 @@ class MascotModel {
       clothId: clearCloth ? null : (clothId ?? this.clothId),
       backdropId: clearBackdrop ? 'backdrop_default' : (backdropId ?? this.backdropId),
       happiness: (happiness ?? this.happiness).clamp(40.0, 100.0),
-      energy: (energy ?? this.energy).clamp(35.0, 100.0),
+      energy: (energy ?? this.energy).clamp(40.0, 100.0),
       dailyAffectionCount: dailyAffectionCount ?? this.dailyAffectionCount,
       lastAffectionDate: lastAffectionDate ?? this.lastAffectionDate,
       lastInteractedAt: lastInteractedAt ?? this.lastInteractedAt,
@@ -95,7 +95,7 @@ class MascotModel {
       clothId: map['clothId'] as String?,
       backdropId: map['backdropId'] as String?,
       happiness: ((map['happiness'] as num?)?.toDouble() ?? 90.0).clamp(40.0, 100.0),
-      energy: ((map['energy'] as num?)?.toDouble() ?? 85.0).clamp(35.0, 100.0),
+      energy: ((map['energy'] as num?)?.toDouble() ?? 85.0).clamp(40.0, 100.0),
       dailyAffectionCount: (map['dailyAffectionCount'] as int?) ?? 0,
       lastAffectionDate: map['lastAffectionDate'] != null
           ? DateTime.tryParse(map['lastAffectionDate'] as String)
