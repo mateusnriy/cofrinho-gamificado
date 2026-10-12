@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/providers/global_providers.dart';
 import '../../core/utils/formatters.dart';
 import '../../data/models/goal_model.dart';
-import '../../core/providers/global_providers.dart';
 import '../../domain/usecases/register_deposit_use_case.dart';
 import '../../widgets/celebration_overlay.dart';
 
@@ -27,9 +27,16 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
   final _noteController = TextEditingController();
   bool _isLoading = false;
   int _dateOffset = 0; // 0 para Hoje, 1 para Ontem (resgate de streak)
+  late GoalModel _selectedGoal;
 
   // UX-DR3: Chips de valores rápidos
   static const _quickValues = [10.0, 25.0, 50.0, 100.0, 200.0];
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedGoal = widget.goal;
+  }
 
   @override
   void dispose() {
@@ -50,7 +57,7 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
   bool get _isAmountValid {
     final amount = _parsedAmount;
     if (amount == null || amount <= 0) return false;
-    if (amount > widget.goal.remainingAmount) return false;
+    if (amount > _selectedGoal.remainingAmount) return false;
     return true;
   }
 
@@ -62,20 +69,47 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
     if (amount == null || amount <= 0) {
       return 'Informe um valor maior que zero';
     }
-    if (amount > widget.goal.remainingAmount) {
-      return 'O valor não pode ultrapassar o saldo restante (${AppFormatters.currency(widget.goal.remainingAmount)})';
+    if (amount > _selectedGoal.remainingAmount) {
+      return 'O valor não pode ultrapassar o saldo restante (${AppFormatters.currency(_selectedGoal.remainingAmount)})';
     }
     return null;
   }
 
+  double? _calculateSuggestedRhythmAmount(GoalModel goal) {
+    if (goal.remainingAmount <= 0) return null;
+    if (goal.deadline == null || goal.rhythm == 'free') return null;
+
+    final daysLeft =
+        goal.deadline!.difference(DateTime.now()).inDays.clamp(1, 9999);
+    double raw;
+    if (goal.rhythm == 'daily') {
+      raw = goal.remainingAmount / daysLeft;
+    } else if (goal.rhythm == 'monthly') {
+      final months = (daysLeft / 30.0).clamp(1.0, 999.0);
+      raw = goal.remainingAmount / months;
+    } else {
+      final weeks = (daysLeft / 7.0).clamp(1.0, 999.0);
+      raw = goal.remainingAmount / weeks;
+    }
+    final rounded = raw.ceilToDouble();
+    return rounded.clamp(1.0, goal.remainingAmount);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final goal = widget.goal;
+    final goal = _selectedGoal;
     final goalColor = Color(goal.colorValue);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    final maxAvailableHeight = MediaQuery.of(context).size.height * 0.85;
+    final maxAvailableHeight = MediaQuery.of(context).size.height * 0.88;
     final amount = _parsedAmount;
     final errorMessage = _validationError;
+    final suggestedAmount = _calculateSuggestedRhythmAmount(goal);
+    final activeGoals = ref
+        .watch(goalRepositoryProvider)
+        .getActive()
+        .where((g) => !g.isCompleted)
+        .toList();
 
     return SafeArea(
       child: ConstrainedBox(
@@ -83,9 +117,9 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
         child: Container(
           decoration: BoxDecoration(
             color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           ),
-          padding: EdgeInsets.fromLTRB(20, 16, 20, 20 + bottomInset),
+          padding: EdgeInsets.fromLTRB(20, 14, 20, 20 + bottomInset),
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
             child: Column(
@@ -94,15 +128,15 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
               children: [
                 Center(
                   child: Container(
-                    width: 40,
-                    height: 4,
+                    width: 42,
+                    height: 5,
                     decoration: BoxDecoration(
                       color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: BorderRadius.circular(99),
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
                 Row(
                   children: [
                     Container(
@@ -110,11 +144,13 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                       height: 44,
                       decoration: BoxDecoration(
                         color: goalColor.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(13),
                       ),
                       child: Icon(
-                        IconData(goal.iconCodePoint,
-                            fontFamily: 'MaterialIcons'),
+                        IconData(
+                          goal.iconCodePoint,
+                          fontFamily: 'MaterialIcons',
+                        ),
                         color: goalColor,
                         size: 22,
                       ),
@@ -138,9 +174,77 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
+
+                // Seletor horizontal de metas (#depGoals do protótipo — AUD-14)
+                if (activeGoals.length > 1) ...[
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    height: 36,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: activeGoals.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 8),
+                      itemBuilder: (context, index) {
+                        final g = activeGoals[index];
+                        final isSelected = g.id == goal.id;
+                        final gColor = Color(g.colorValue);
+                        return InkWell(
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            setState(() => _selectedGoal = g);
+                          },
+                          borderRadius: BorderRadius.circular(99),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? gColor
+                                  : (isDark
+                                      ? const Color(0xFF243B2A)
+                                      : const Color(0xFFEEF3EE)),
+                              borderRadius: BorderRadius.circular(99),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  IconData(
+                                    g.iconCodePoint,
+                                    fontFamily: 'MaterialIcons',
+                                  ),
+                                  size: 15,
+                                  color: isSelected ? Colors.white : gColor,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  g.name,
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                    color: isSelected
+                                        ? Colors.white
+                                        : (isDark
+                                            ? Colors.white
+                                            : const Color(0xFF1A1A1A)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+
+                const SizedBox(height: 16),
                 _MiniProgressBar(goal: goal, goalColor: goalColor),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
                 Text(
                   'Valor depositado *',
                   style: Theme.of(context)
@@ -187,7 +291,52 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                   ),
                   onChanged: (_) => setState(() {}),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
+
+                // Botão largo de Valor Sugerido pelo Ritmo (#depChips do protótipo — AUD-14)
+                if (suggestedAmount != null) ...[
+                  SizedBox(
+                    width: double.infinity,
+                    child: InkWell(
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        _amountController.text = suggestedAmount
+                            .toStringAsFixed(2)
+                            .replaceAll('.', ',');
+                        setState(() {});
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 9,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? const Color(0xFF132E1C)
+                              : const Color(0xFFE8F5E9),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: const Color(0xFF2E7D32).withValues(alpha: 0.4),
+                          ),
+                        ),
+                        child: Text(
+                          '⭐ Sugerido pelo seu ritmo: ${AppFormatters.currency(suggestedAmount)}',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                            color: isDark
+                                ? const Color(0xFF00C853)
+                                : const Color(0xFF2E7D32),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
 
                 // UX-DR3: Chips de valores rápidos (+R$ 10 a +R$ 200)
                 SizedBox(
@@ -196,8 +345,7 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                     scrollDirection: Axis.horizontal,
                     physics: const BouncingScrollPhysics(),
                     children: _quickValues.map((value) {
-                      final isWithinBudget =
-                          value <= widget.goal.remainingAmount;
+                      final isWithinBudget = value <= goal.remainingAmount;
 
                       return Padding(
                         padding: const EdgeInsets.only(right: 8),
@@ -247,7 +395,9 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                                 : Theme.of(context).cardTheme.color,
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: _dateOffset == 0 ? goalColor : Colors.grey.withValues(alpha: 0.2),
+                              color: _dateOffset == 0
+                                  ? goalColor
+                                  : Colors.grey.withValues(alpha: 0.2),
                               width: _dateOffset == 0 ? 1.5 : 1,
                             ),
                           ),
@@ -277,7 +427,9 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                                 : Theme.of(context).cardTheme.color,
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: _dateOffset == 1 ? goalColor : Colors.grey.withValues(alpha: 0.2),
+                              color: _dateOffset == 1
+                                  ? goalColor
+                                  : Colors.grey.withValues(alpha: 0.2),
                               width: _dateOffset == 1 ? 1.5 : 1,
                             ),
                           ),
@@ -302,7 +454,9 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                   const SizedBox(height: 16),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 10),
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFFEF3C7),
                       borderRadius: BorderRadius.circular(14),
@@ -313,12 +467,14 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                       children: [
                         const Text('🪙', style: TextStyle(fontSize: 18)),
                         const SizedBox(width: 8),
-                        Text(
-                          '+${amount.floor()} Oinc Coins serão adicionadas!',
-                          style: const TextStyle(
-                            color: Color(0xFF92400E),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
+                        Flexible(
+                          child: Text(
+                            '+${amount.floor()} Oinc Coins serão adicionadas!',
+                            style: const TextStyle(
+                              color: Color(0xFF92400E),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                       ],
@@ -330,7 +486,9 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 10),
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFFEF2F2),
                       borderRadius: BorderRadius.circular(12),
@@ -338,8 +496,11 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.error_outline_rounded,
-                            color: Color(0xFFEF4444), size: 18),
+                        const Icon(
+                          Icons.error_outline_rounded,
+                          color: Color(0xFFEF4444),
+                          size: 18,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -379,8 +540,7 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                   onPressed: (_isLoading || !_isAmountValid) ? null : _save,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: goalColor,
-                    disabledBackgroundColor:
-                        goalColor.withValues(alpha: 0.35),
+                    disabledBackgroundColor: goalColor.withValues(alpha: 0.35),
                   ),
                   child: _isLoading
                       ? const SizedBox(
@@ -421,11 +581,12 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
       _isLoading = true;
     });
 
+    final targetGoal = _selectedGoal;
     DepositResult? result;
     try {
       final useCase = ref.read(registerDepositUseCaseProvider);
       result = await useCase.execute(
-        goalId: widget.goal.id,
+        goalId: targetGoal.id,
         amount: amount,
         date: DateTime.now().subtract(Duration(days: _dateOffset)),
         note: _noteController.text,
@@ -456,7 +617,7 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
           CelebrationOverlay.showGoalCompleted(
             rootNav.context,
             overlayState: overlay,
-            goalName: widget.goal.name,
+            goalName: targetGoal.name,
           );
         } else if (result.newBadges.isNotEmpty) {
           CelebrationOverlay.showBadgeUnlocked(
@@ -468,7 +629,7 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
           CelebrationOverlay.showMilestoneReached(
             rootNav.context,
             overlayState: overlay,
-            goalName: widget.goal.name,
+            goalName: targetGoal.name,
             milestonePercent: result.milestonesAfter * 25,
           );
         }
@@ -495,7 +656,9 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
           ),
           backgroundColor: const Color(0xFF10B981),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
     }
