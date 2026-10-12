@@ -335,15 +335,63 @@ class _GoalDetailScreenState extends ConsumerState<GoalDetailScreen> {
                     ],
                   ),
 
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 14),
 
-                  // Legenda do Alvo e Dias Restantes
-                  Text(
-                    'Alvo ${AppFormatters.currency(goal.targetAmount)} • ${goal.progressPercent.toInt()}% • ${daysLeft != null ? '$daysLeft dias restantes' : 'sem prazo definido'}',
-                    style: TextStyle(
-                      fontFamily: 'Nunito',
-                      fontSize: 12,
-                      color: Colors.white.withValues(alpha: 0.90),
+                  // Card translúcido de progresso do header (#dHdr do protótipo)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.16),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                'Alvo ${AppFormatters.currency(goal.targetAmount)}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontFamily: 'Nunito',
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white.withValues(alpha: 0.95),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '${goal.progressPercent.toInt()}% • ${daysLeft != null ? '$daysLeft dias restantes' : 'sem prazo definido'}',
+                              style: TextStyle(
+                                fontFamily: 'Nunito',
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white.withValues(alpha: 0.95),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(99),
+                          child: LinearProgressIndicator(
+                            value: goal.progress.clamp(0.0, 1.0),
+                            minHeight: 8,
+                            backgroundColor:
+                                Colors.white.withValues(alpha: 0.25),
+                            valueColor: const AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -521,98 +569,197 @@ class _GoalDetailScreenState extends ConsumerState<GoalDetailScreen> {
       );
     }
 
-    // Agrupa depósitos por mês (ex: Outubro, Novembro)
+    // Agrupa depósitos por mês (ex: Out, Nov)
+    const monthNames = [
+      'Jan',
+      'Fev',
+      'Mar',
+      'Abr',
+      'Mai',
+      'Jun',
+      'Jul',
+      'Ago',
+      'Set',
+      'Out',
+      'Nov',
+      'Dez',
+    ];
     final Map<String, double> monthlySums = {};
     for (final d in deposits) {
-      final key = '${d.date.month}/${d.date.year}';
+      final mName = monthNames[(d.date.month - 1).clamp(0, 11)];
+      final key = '$mName/${d.date.year.toString().substring(2)}';
       monthlySums[key] = (monthlySums[key] ?? 0.0) + d.amount;
     }
 
     final maxVal = monthlySums.values.fold<double>(0.0, (a, b) => a > b ? a : b);
+    final rhythmLabel = switch (goal.rhythm) {
+      'daily' => '☀️ Diário',
+      'weekly' => '📅 Semanal',
+      'monthly' => '🗓️ Mensal',
+      _ => '🌱 No meu ritmo',
+    };
 
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1B2E22) : Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: isDark ? const Color(0xFF2F4A37) : const Color(0xFFE2E8E2),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1B2E22) : Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: isDark ? const Color(0xFF2F4A37) : const Color(0xFFE2E8E2),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Guardado por mês',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Guardado por mês',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  Text(
+                    'R\$ / mês',
+                    style: TextStyle(
+                      fontFamily: 'Nunito',
+                      fontSize: 11,
+                      color: isDark ? Colors.white60 : const Color(0xFF566259),
+                    ),
+                  ),
+                ],
               ),
-              Text(
-                'R\$ / mês',
-                style: TextStyle(
-                  fontFamily: 'Nunito',
-                  fontSize: 11,
-                  color: isDark ? Colors.white60 : const Color(0xFF566259),
+              const SizedBox(height: 20),
+
+              // Barras estéticas verticais
+              SizedBox(
+                height: 160,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: monthlySums.entries.map((e) {
+                    final heightFactor =
+                        maxVal > 0 ? (e.value / maxVal).clamp(0.08, 1.0) : 0.1;
+                    return Flexible(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Text(
+                            AppFormatters.currency(e.value),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontFamily: 'Nunito',
+                              fontWeight: FontWeight.bold,
+                              fontSize: 10,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Container(
+                            width: 30,
+                            height: 110 * heightFactor,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  goalColor,
+                                  goalColor.withValues(alpha: 0.5),
+                                ],
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                              ),
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(10),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            e.key,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 11,
+                              color: isDark
+                                  ? Colors.white70
+                                  : const Color(0xFF1A1A1A),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 20),
-
-          // Barras estéticas verticais
-          SizedBox(
-            height: 160,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: monthlySums.entries.map((e) {
-                final heightFactor = maxVal > 0 ? (e.value / maxVal).clamp(0.08, 1.0) : 0.1;
-                return Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Text(
-                      AppFormatters.currency(e.value),
-                      style: const TextStyle(
-                        fontFamily: 'Nunito',
-                        fontWeight: FontWeight.bold,
-                        fontSize: 10,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Container(
-                      width: 32,
-                      height: 110 * heightFactor,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [goalColor, goalColor.withValues(alpha: 0.5)],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                        ),
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      e.key,
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 11,
-                        color: isDark ? Colors.white70 : const Color(0xFF1A1A1A),
-                      ),
-                    ),
-                  ],
-                );
-              }).toList(),
-            ),
+        ),
+        const SizedBox(height: 12),
+        // Card de Resumo do Ritmo Escolhido (idêntico ao protótipo #dBody tab 'e')
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF243B2A) : const Color(0xFFEEF3EE),
+            borderRadius: BorderRadius.circular(18),
           ),
-        ],
-      ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Ritmo escolhido',
+                    style: TextStyle(
+                      fontFamily: 'Nunito',
+                      fontSize: 11,
+                      color: isDark ? Colors.white60 : const Color(0xFF566259),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    rhythmLabel,
+                    style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    'Total de depósitos',
+                    style: TextStyle(
+                      fontFamily: 'Nunito',
+                      fontSize: 11,
+                      color: isDark ? Colors.white60 : const Color(0xFF566259),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${deposits.length} registro${deposits.length == 1 ? '' : 's'}',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14,
+                      color: goalColor,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

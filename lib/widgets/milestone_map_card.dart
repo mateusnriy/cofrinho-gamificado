@@ -158,6 +158,37 @@ class MilestoneMapCard extends StatelessWidget {
               );
             },
           ),
+
+          const SizedBox(height: 8),
+
+          // Caixa de incentivo do Porko (idêntica ao protótipo #dBody tab 'j')
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF243B2A) : const Color(0xFFEEF3EE),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                const Text('🐷', style: TextStyle(fontSize: 28)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    goal.isCompleted
+                        ? 'Parabéns! Você concluiu 100% desta jornada com o Porko! 🎉'
+                        : 'Você já percorreu ${goal.progressPercent.toInt()}% do caminho. Continue firme — cada depósito aproxima você da conquista!',
+                    style: TextStyle(
+                      fontFamily: 'Nunito',
+                      fontSize: 12,
+                      height: 1.35,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white70 : const Color(0xFF566259),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
