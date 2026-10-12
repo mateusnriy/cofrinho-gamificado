@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
+import '../../data/models/mascot_model.dart';
+import '../../widgets/porko_canvas_widget.dart';
 import '../home/home_screen.dart';
 import '../goal_form/goal_form_screen.dart';
 
@@ -23,7 +25,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     super.initState();
     _animController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 1100),
     );
 
     _scaleAnimation = Tween<double>(begin: 0.85, end: 1.0).animate(
@@ -54,8 +56,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
     if (!mounted) return;
 
-    // Substitui Onboarding pela HomeScreen e abre GoalFormScreen por cima
-    // Garantindo que ao voltar da criação de meta, o usuário caia no Dashboard
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => const HomeScreen()),
     );
@@ -79,58 +79,88 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryColor = Theme.of(context).colorScheme.primary;
+    final primaryColor = isDark ? const Color(0xFF00C853) : const Color(0xFF2E7D32);
 
     return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF0D1F14) : const Color(0xFFF5F5F5),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 16),
-              // Cabeçalho com Mascote Porko
+              const SizedBox(height: 12),
               Expanded(
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
                   child: Column(
                     children: [
-                      const SizedBox(height: 20),
-                      // Mascote Vetorial Nativo do Porko
+                      const SizedBox(height: 12),
+                      // Pílula de Identidade Oinc
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: primaryColor.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.savings_rounded,
+                              size: 16,
+                              color: primaryColor,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Oinc — Meu cofrinho virtual',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                                color: primaryColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      // Palco Soft 3D do Mascote Porko
                       ScaleTransition(
                         scale: _scaleAnimation,
                         child: FadeTransition(
                           opacity: _fadeAnimation,
-                          child: _buildPorkoHero(primaryColor),
+                          child: _buildPorko3DHero(isDark),
                         ),
                       ),
-                      const SizedBox(height: 28),
-                      // Título e Subtítulo
+                      const SizedBox(height: 22),
                       Text(
-                        'Bem-vindo ao\nCofrinho Digital!',
+                        'Olá! Eu sou o Porko 🐷\nBem-vindo ao Oinc!',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 28,
+                          fontFamily: 'Poppins',
+                          fontSize: 25,
                           fontWeight: FontWeight.w800,
                           letterSpacing: -0.5,
-                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                          color: isDark ? Colors.white : const Color(0xFF1A1A1A),
                           height: 1.2,
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 10),
                       Text(
-                        'Transforme o hábito de poupar em uma experiência leve, visual e cheia de recompensas.',
+                        'Transforme o hábito de poupar em uma jornada leve, visual em 3D e 100% livre de culpa.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 15,
+                          fontFamily: 'Nunito',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
                           height: 1.4,
                           color: isDark
-                              ? const Color(0xFF94A3B8)
-                              : const Color(0xFF64748B),
+                              ? const Color(0xFFA5D6A7)
+                              : const Color(0xFF566259),
                         ),
                       ),
-                      const SizedBox(height: 32),
-                      // 3 Pilares / Benefícios
+                      const SizedBox(height: 24),
                       _buildBenefitItem(
                         icon: Icons.track_changes_rounded,
                         iconColor: const Color(0xFF10B981),
@@ -139,31 +169,31 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                             'Defina seus objetivos e acompanhe sua evolução em tempo real com 4 marcos automáticos.',
                         isDark: isDark,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       _buildBenefitItem(
                         icon: Icons.calendar_today_rounded,
                         iconColor: const Color(0xFF3B82F6),
                         title: 'Projeções Inteligentes',
                         description:
-                            'Descubra quanto poupar por dia, semana ou mês sem fazer contas complicadas de cabeça.',
+                            'Descubra quanto poupar por dia, semana ou mês — ou guarde no seu próprio ritmo sem pressão.',
                         isDark: isDark,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       _buildBenefitItem(
                         icon: Icons.emoji_events_rounded,
                         iconColor: const Color(0xFFF59E0B),
                         title: 'Gamificação & Recompensas',
                         description:
-                            'Ganhe Oinc Coins a cada depósito, mantenha seus streaks e personalize o mascote Porko!',
+                            'Ganhe Oinc Coins a cada depósito, desbloqueie medalhas 3D e vista o Porko na lojinha!',
                         isDark: isDark,
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 20),
                     ],
                   ),
                 ),
               ),
 
-              // Botões de Ação na base (Thumb Zone)
+              // Botões na Zona do Polegar
               Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -172,11 +202,11 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primaryColor,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(18),
                       ),
-                      elevation: 2,
+                      elevation: 4,
                     ),
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -184,8 +214,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                         Text(
                           'Criar Primeira Meta',
                           style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
+                            fontFamily: 'Poppins',
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                         SizedBox(width: 8),
@@ -193,24 +224,25 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       ],
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   TextButton(
                     onPressed: _completeOnboardingAndGoHome,
                     style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                       foregroundColor: isDark
-                          ? const Color(0xFF94A3B8)
-                          : const Color(0xFF64748B),
+                          ? const Color(0xFFA5D6A7)
+                          : const Color(0xFF566259),
                     ),
                     child: const Text(
                       'Explorar o aplicativo primeiro',
                       style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                        fontFamily: 'Poppins',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                 ],
               ),
             ],
@@ -220,16 +252,22 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     );
   }
 
-  Widget _buildPorkoHero(Color primaryColor) {
+  Widget _buildPorko3DHero(bool isDark) {
     return Container(
-      width: 120,
-      height: 120,
+      width: 170,
+      height: 150,
       decoration: BoxDecoration(
-        color: const Color(0xFFFCE7F3), // Rosa claro aconchegante
-        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          colors: isDark
+              ? const [Color(0xFF0B1A2E), Color(0xFF0F3A26), Color(0xFF1B5E20)]
+              : const [Color(0xFF7DD3FC), Color(0xFF86EFAC), Color(0xFF34D399)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+        borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFEC4899).withValues(alpha: 0.25),
+            color: const Color(0xFF10B981).withValues(alpha: 0.25),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
@@ -238,16 +276,14 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Ícone central estilizado do cofrinho
-          const Icon(
-            Icons.savings_rounded,
-            size: 68,
-            color: Color(0xFFEC4899),
+          const PorkoCanvasWidget(
+            mood: PorkoMood.happy,
+            mascot: MascotModel(),
+            compact: true,
           ),
-          // Estrelinha / Distintivo de boas-vindas
           Positioned(
-            right: 8,
-            top: 8,
+            right: 12,
+            top: 12,
             child: Container(
               padding: const EdgeInsets.all(6),
               decoration: const BoxDecoration(
@@ -274,12 +310,12 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     required bool isDark,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        color: isDark ? const Color(0xFF1B2E22) : Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+          color: isDark ? const Color(0xFF2F4A37) : const Color(0xFFE2E8E2),
           width: 1,
         ),
       ),
@@ -289,16 +325,16 @@ class _OnboardingScreenState extends State<OnboardingScreen>
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.12),
+              color: iconColor.withValues(alpha: 0.14),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(
               icon,
               color: iconColor,
-              size: 24,
+              size: 22,
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -306,20 +342,22 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 Text(
                   title,
                   style: TextStyle(
-                    fontSize: 15,
+                    fontFamily: 'Poppins',
+                    fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    color: isDark ? Colors.white : const Color(0xFF1A1A1A),
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
                 Text(
                   description,
                   style: TextStyle(
-                    fontSize: 13,
+                    fontFamily: 'Nunito',
+                    fontSize: 12.5,
                     height: 1.35,
                     color: isDark
-                        ? const Color(0xFF94A3B8)
-                        : const Color(0xFF64748B),
+                        ? const Color(0xFFA5D6A7)
+                        : const Color(0xFF566259),
                   ),
                 ),
               ],

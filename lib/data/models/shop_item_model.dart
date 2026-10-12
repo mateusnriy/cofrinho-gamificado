@@ -107,6 +107,24 @@ class ShopCatalog {
       accentColor: Color(0xFF8B5CF6),
     ),
     ShopItem(
+      id: 'hat_grad',
+      name: 'Chapéu Formatura',
+      description: 'Para celebrar cada conquista acadêmica e financeira.',
+      category: CosmeticCategory.hat,
+      price: 110,
+      icon: Icons.school_rounded,
+      accentColor: Color(0xFF1E293B),
+    ),
+    ShopItem(
+      id: 'hat_chef',
+      name: 'Chapéu de Chef',
+      description: 'Mestre na receita das economias perfeitas.',
+      category: CosmeticCategory.hat,
+      price: 95,
+      icon: Icons.restaurant_rounded,
+      accentColor: Color(0xFF64748B),
+    ),
+    ShopItem(
       id: 'hat_crown',
       name: 'Coroa Real',
       description: 'Digna do rei das economias.',
@@ -117,6 +135,15 @@ class ShopCatalog {
     ),
 
     // --- ROUPAS ---
+    ShopItem(
+      id: 'cloth_scarf',
+      name: 'Cachecol Vermelho',
+      description: 'Quentinho e cheio de charme em 3D.',
+      category: CosmeticCategory.cloth,
+      price: 60,
+      icon: Icons.ac_unit_rounded,
+      accentColor: Color(0xFFDC2626),
+    ),
     ShopItem(
       id: 'cloth_tshirt',
       name: 'Camiseta Padrão',
@@ -134,6 +161,15 @@ class ShopCatalog {
       price: 200,
       icon: Icons.style_rounded,
       accentColor: Color(0xFFEF4444),
+    ),
+    ShopItem(
+      id: 'cloth_tie',
+      name: 'Terno Executivo',
+      description: 'Visual de investidor profissional.',
+      category: CosmeticCategory.cloth,
+      price: 140,
+      icon: Icons.work_rounded,
+      accentColor: Color(0xFF1E293B),
     ),
     ShopItem(
       id: 'cloth_jacket',
