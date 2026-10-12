@@ -187,7 +187,14 @@ class GoalFormNotifier extends StateNotifier<GoalFormState> {
     }
 
     HapticFeedback.lightImpact();
-    state = state.copyWith(currentStep: 1, clearError: true);
+    final nextMode = state.deadline == null
+        ? 'free'
+        : (state.selectedEconomyMode == 'free' ? 'weekly' : (state.selectedEconomyMode ?? 'weekly'));
+    state = state.copyWith(
+      currentStep: 1,
+      selectedEconomyMode: nextMode,
+      clearError: true,
+    );
     return true;
   }
 
