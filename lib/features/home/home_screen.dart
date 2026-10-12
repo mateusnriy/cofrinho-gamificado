@@ -21,7 +21,8 @@ import '../mascot/mascot_screen.dart';
 import '../profile/profile_settings_modal.dart';
 import 'home_provider.dart';
 
-// Tela principal com habitat orgânico, 4 abas e o botão central (+) projetado
+/// Tela principal com habitat orgânico Soft 3D, colapso suave no scroll (340px -> 116px),
+/// filtro de metas tipo menu sanduíche (☰), 4 abas e botão central (+) projetado.
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -30,20 +31,39 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  // Guarda a aba atualmente selecionada
   int _currentTabIndex = 0;
 
   // Controle de exibição do total acumulado (privacidade temporizada de 3s)
   bool _showTotalAmount = false;
   Timer? _totalPrivacyTimer;
 
+  // Controle de colapso suave do Habitat (340px -> 116px) durante o scroll
+  final ScrollController _scrollController = ScrollController();
+  double _collapseProgress = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final offset = _scrollController.offset;
+    final nextProgress = (offset / 180.0).clamp(0.0, 1.0);
+    if ((nextProgress - _collapseProgress).abs() > 0.02) {
+      setState(() => _collapseProgress = nextProgress);
+    }
+  }
+
   @override
   void dispose() {
     _totalPrivacyTimer?.cancel();
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     super.dispose();
   }
 
-  // Alterna a exibição do total guardado com timer de 3 segundos
   void _toggleRevealTotal() {
     HapticFeedback.lightImpact();
     setState(() {
@@ -60,21 +80,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 
-  // Abre a tela de criar nova meta financeira
   void _openGoalForm(BuildContext context, {GoalModel? goal}) {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => GoalFormScreen(existingGoal: goal)),
     );
   }
 
-  // Abre a tela de detalhes de uma meta ao tocar nela
   void _openDetail(BuildContext context, GoalModel goal) {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => GoalDetailScreen(goalId: goal.id)),
     );
   }
 
-  // Abre a tela para registrar um depósito na meta
   void _openDepositSheet(BuildContext context, GoalModel goal) {
     showModalBottomSheet(
       context: context,
@@ -84,7 +101,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  // Abre o modal de configurações de perfil e tema
   void _openProfileModal(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -94,7 +110,374 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  // Abre o menu deslizante central com as duas opções rápidas do botão (+)
+  /// Abre o Menu Sanduíche (☰) de Filtro e Ordenação das Metas (AUD-06)
+  void _openHamburgerFilterSheet(BuildContext context) {
+    HapticFeedback.selectionClick();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Consumer(
+          builder: (ctx, sheetRef, _) {
+            final isDark = Theme.of(ctx).brightness == Brightness.dark;
+            final currentFilter = sheetRef.watch(goalFilterProvider);
+            final currentSort = sheetRef.watch(sortOrderProvider);
+            final primary =
+                isDark ? const Color(0xFF00C853) : const Color(0xFF2E7D32);
+
+            return Container(
+              padding: const EdgeInsets.fromLTRB(22, 14, 22, 28),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1B2E22) : Colors.white,
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(32)),
+                border: Border.all(
+                  color:
+                      isDark ? const Color(0xFF2F4A37) : const Color(0xFFE2E8E2),
+                ),
+              ),
+              child: SafeArea(
+                top: false,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 44,
+                          height: 5,
+                          margin: const EdgeInsets.only(bottom: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.withValues(alpha: 0.35),
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                        ),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.menu_rounded, color: primary, size: 22),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Filtrar & Ordenar Metas',
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: isDark
+                                      ? Colors.white
+                                      : const Color(0xFF1A1A1A),
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (currentFilter != GoalFilter.all ||
+                              currentSort != SortOrder.createdAt)
+                            TextButton(
+                              onPressed: () {
+                                sheetRef
+                                    .read(goalFilterProvider.notifier)
+                                    .setFilter(GoalFilter.all);
+                                sheetRef
+                                    .read(sortOrderProvider.notifier)
+                                    .setOrder(SortOrder.createdAt);
+                              },
+                              child: Text(
+                                'Limpar filtros',
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: primary,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Text(
+                        'FILTRAR POR STATUS OU RITMO',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                          color: isDark
+                              ? const Color(0xFFA5D6A7)
+                              : const Color(0xFF566259),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _buildFilterChip(
+                            label: '📋 Todas',
+                            selected: currentFilter == GoalFilter.all,
+                            isDark: isDark,
+                            primary: primary,
+                            onTap: () {
+                              sheetRef
+                                  .read(goalFilterProvider.notifier)
+                                  .setFilter(GoalFilter.all);
+                            },
+                          ),
+                          _buildFilterChip(
+                            label: '⏳ Em andamento',
+                            selected: currentFilter == GoalFilter.inProgress,
+                            isDark: isDark,
+                            primary: primary,
+                            onTap: () {
+                              sheetRef
+                                  .read(goalFilterProvider.notifier)
+                                  .setFilter(GoalFilter.inProgress);
+                            },
+                          ),
+                          _buildFilterChip(
+                            label: '🏆 Concluídas',
+                            selected: currentFilter == GoalFilter.completed,
+                            isDark: isDark,
+                            primary: primary,
+                            onTap: () {
+                              sheetRef
+                                  .read(goalFilterProvider.notifier)
+                                  .setFilter(GoalFilter.completed);
+                            },
+                          ),
+                          _buildFilterChip(
+                            label: '📅 Com prazo',
+                            selected: currentFilter == GoalFilter.withDeadline,
+                            isDark: isDark,
+                            primary: primary,
+                            onTap: () {
+                              sheetRef
+                                  .read(goalFilterProvider.notifier)
+                                  .setFilter(GoalFilter.withDeadline);
+                            },
+                          ),
+                          _buildFilterChip(
+                            label: '🌱 No meu ritmo',
+                            selected: currentFilter == GoalFilter.freePace,
+                            isDark: isDark,
+                            primary: primary,
+                            onTap: () {
+                              sheetRef
+                                  .read(goalFilterProvider.notifier)
+                                  .setFilter(GoalFilter.freePace);
+                            },
+                          ),
+                          _buildFilterChip(
+                            label: '📦 Arquivadas',
+                            selected: currentFilter == GoalFilter.archived,
+                            isDark: isDark,
+                            primary: primary,
+                            onTap: () {
+                              sheetRef
+                                  .read(goalFilterProvider.notifier)
+                                  .setFilter(GoalFilter.archived);
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 18),
+                      Text(
+                        'ORDENAR POR',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                          color: isDark
+                              ? const Color(0xFFA5D6A7)
+                              : const Color(0xFF566259),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildSortOptionTile(
+                        title: 'Mais recentes',
+                        subtitle: 'Metas criadas por último no topo',
+                        icon: Icons.schedule_rounded,
+                        selected: currentSort == SortOrder.createdAt,
+                        isDark: isDark,
+                        primary: primary,
+                        onTap: () {
+                          sheetRef
+                              .read(sortOrderProvider.notifier)
+                              .setOrder(SortOrder.createdAt);
+                          Navigator.pop(ctx);
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      _buildSortOptionTile(
+                        title: 'Por prazo',
+                        subtitle: 'Prazo mais curto primeiro',
+                        icon: Icons.event_available_rounded,
+                        selected: currentSort == SortOrder.deadline,
+                        isDark: isDark,
+                        primary: primary,
+                        onTap: () {
+                          sheetRef
+                              .read(sortOrderProvider.notifier)
+                              .setOrder(SortOrder.deadline);
+                          Navigator.pop(ctx);
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      _buildSortOptionTile(
+                        title: 'Por progresso',
+                        subtitle: 'Maior porcentagem concluída no topo',
+                        icon: Icons.trending_up_rounded,
+                        selected: currentSort == SortOrder.progress,
+                        isDark: isDark,
+                        primary: primary,
+                        onTap: () {
+                          sheetRef
+                              .read(sortOrderProvider.notifier)
+                              .setOrder(SortOrder.progress);
+                          Navigator.pop(ctx);
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      _buildSortOptionTile(
+                        title: 'Maior valor guardado',
+                        subtitle: 'Maior saldo acumulado em R\$ no topo',
+                        icon: Icons.savings_rounded,
+                        selected: currentSort == SortOrder.savedAmount,
+                        isDark: isDark,
+                        primary: primary,
+                        onTap: () {
+                          sheetRef
+                              .read(sortOrderProvider.notifier)
+                              .setOrder(SortOrder.savedAmount);
+                          Navigator.pop(ctx);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildFilterChip({
+    required String label,
+    required bool selected,
+    required bool isDark,
+    required Color primary,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected
+              ? primary
+              : (isDark ? const Color(0xFF243B2A) : const Color(0xFFEEF3EE)),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: selected
+                ? primary
+                : (isDark ? const Color(0xFF2F4A37) : const Color(0xFFE2E8E2)),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontFamily: 'Poppins',
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: selected
+                ? (isDark ? const Color(0xFF04210F) : Colors.white)
+                : (isDark ? Colors.white : const Color(0xFF1A1A1A)),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSortOptionTile({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required bool selected,
+    required bool isDark,
+    required Color primary,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        decoration: BoxDecoration(
+          color: selected
+              ? primary.withValues(alpha: 0.14)
+              : (isDark ? const Color(0xFF243B2A) : const Color(0xFFEEF3EE)),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: selected
+                ? primary
+                : (isDark ? const Color(0xFF2F4A37) : const Color(0xFFE2E8E2)),
+            width: selected ? 1.8 : 1.0,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: selected
+                  ? primary
+                  : (isDark ? const Color(0xFFA5D6A7) : const Color(0xFF566259)),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white : const Color(0xFF1A1A1A),
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontFamily: 'Nunito',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: isDark
+                          ? const Color(0xFFA5D6A7)
+                          : const Color(0xFF566259),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (selected)
+              Icon(Icons.check_circle_rounded, color: primary, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Abre o menu rápido do botão central (+) idêntico ao `#fabSheet` do protótipo (empilhado em Column)
   void _openQuickActionSheet(BuildContext context, List<GoalModel> goals) {
     HapticFeedback.mediumImpact();
     showModalBottomSheet(
@@ -104,119 +487,182 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         final theme = Theme.of(ctx);
         final isDark = theme.brightness == Brightness.dark;
         return Container(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
           decoration: BoxDecoration(
             color: isDark ? const Color(0xFF1B2E22) : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
             border: Border.all(
               color: isDark ? const Color(0xFF2F4A37) : const Color(0xFFE2E8E2),
             ),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 44,
-                height: 5,
-                margin: const EdgeInsets.only(bottom: 20),
-                decoration: BoxDecoration(
-                  color: Colors.grey.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(5),
-                ),
-              ),
-              Text(
-                'O que você deseja fazer?',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : const Color(0xFF1A1A1A),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildActionCard(
-                      ctx: ctx,
-                      emoji: '💰',
-                      title: 'Novo Depósito',
-                      subtitle: 'Guardar moedinhas',
-                      color: const Color(0xFF10B981),
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        if (goals.isEmpty) {
-                          _openGoalForm(context);
-                        } else {
-                          _openDepositSheet(context, goals.first);
-                        }
-                      },
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 5,
+                    margin: const EdgeInsets.only(bottom: 14),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(5),
                     ),
                   ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: _buildActionCard(
-                      ctx: ctx,
-                      emoji: '🎯',
-                      title: 'Nova Meta',
-                      subtitle: 'Criar novo objetivo',
-                      color: const Color(0xFF3B82F6),
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        _openGoalForm(context);
-                      },
-                    ),
+                ),
+                Text(
+                  'O que você quer fazer?',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                    color: isDark ? Colors.white : const Color(0xFF1A1A1A),
                   ),
-                ],
-              ),
-            ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Escolha uma ação rápida para o seu cofrinho:',
+                  style: TextStyle(
+                    fontFamily: 'Nunito',
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: isDark
+                        ? const Color(0xFFA5D6A7)
+                        : const Color(0xFF566259),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                _buildFabActionRowCard(
+                  isDark: isDark,
+                  emoji: '💰',
+                  title: 'Novo Depósito',
+                  subtitle:
+                      'Guardar dinheiro em uma meta existente e ganhar Oinc Coins',
+                  gradientColors: const [Color(0xFF2E7D32), Color(0xFF66BB6A)],
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    if (goals.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content:
+                              const Text('Crie uma meta primeiro para depositar! 🎯'),
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      );
+                      _openGoalForm(context);
+                    } else {
+                      _openDepositSheet(context, goals.first);
+                    }
+                  },
+                ),
+                const SizedBox(height: 10),
+                _buildFabActionRowCard(
+                  isDark: isDark,
+                  emoji: '🎯',
+                  title: 'Nova Meta',
+                  subtitle:
+                      'Criar um novo objetivo com prazo ou no seu próprio ritmo',
+                  gradientColors: const [Color(0xFF1565C0), Color(0xFF42A5F5)],
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _openGoalForm(context);
+                  },
+                ),
+              ],
+            ),
           ),
         );
       },
     );
   }
 
-  // Card com opção do menu rápido do botão (+)
-  Widget _buildActionCard({
-    required BuildContext ctx,
+  Widget _buildFabActionRowCard({
+    required bool isDark,
     required String emoji,
     required String title,
     required String subtitle,
-    required Color color,
+    required List<Color> gradientColors,
     required VoidCallback onTap,
   }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
+          color: isDark ? const Color(0xFF243B2A) : const Color(0xFFEEF3EE),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color.withValues(alpha: 0.30)),
+          border: Border.all(
+            color: isDark ? const Color(0xFF2F4A37) : const Color(0xFFE2E8E2),
+          ),
         ),
-        child: Column(
+        child: Row(
           children: [
-            Text(emoji, style: const TextStyle(fontSize: 32)),
-            const SizedBox(height: 10),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.bold,
-                color: color,
-                fontSize: 14,
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: gradientColors,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: gradientColors.first.withValues(alpha: 0.35),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Text(emoji, style: const TextStyle(fontSize: 24)),
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: isDark ? Colors.white : const Color(0xFF1A1A1A),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontFamily: 'Nunito',
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      color: isDark
+                          ? const Color(0xFFA5D6A7)
+                          : const Color(0xFF566259),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
             Text(
-              subtitle,
-              textAlign: TextAlign.center,
+              '›',
               style: TextStyle(
-                fontFamily: 'Nunito',
-                color: Colors.grey.shade600,
-                fontSize: 11,
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: isDark
+                    ? const Color(0xFFA5D6A7)
+                    : const Color(0xFF566259),
               ),
             ),
           ],
@@ -230,6 +676,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final goals = ref.watch(homeGoalsProvider);
     final stats = ref.watch(goalStatsProvider);
     final sortOrder = ref.watch(sortOrderProvider);
+    final goalFilter = ref.watch(goalFilterProvider);
     final porkoMood = ref.watch(porkoMoodProvider);
     final equippedMascot = ref.watch(equippedMascotProvider);
     final streakData = ref.watch(streakProvider);
@@ -237,7 +684,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final walletBalance = ref.watch(walletBalanceProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Se estiver em outra aba selecionada, exibe a respectiva tela
     Widget activeBody;
     switch (_currentTabIndex) {
       case 1:
@@ -256,6 +702,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           goals: goals,
           stats: stats,
           sortOrder: sortOrder,
+          goalFilter: goalFilter,
           porkoMood: porkoMood,
           equippedMascot: equippedMascot,
           coins: walletBalance,
@@ -277,12 +724,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  // Monta a tela inicial com o habitat no topo e a lista de metas
   Widget _buildHomeDashboard({
     required BuildContext context,
     required List<GoalModel> goals,
     required Map<String, dynamic> stats,
     required SortOrder sortOrder,
+    required GoalFilter goalFilter,
     required PorkoMood porkoMood,
     required MascotModel equippedMascot,
     required int coins,
@@ -290,21 +737,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     required bool isDark,
   }) {
     final totalSaved = (stats['totalSaved'] as double?) ?? 0.0;
+    final totalActiveGoals = (stats['totalGoals'] as int?) ?? 0;
+    final hasCustomFilterOrSort =
+        goalFilter != GoalFilter.all || sortOrder != SortOrder.createdAt;
+    final primary = isDark ? const Color(0xFF00C853) : const Color(0xFF2E7D32);
 
     return SingleChildScrollView(
+      controller: _scrollController,
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.only(bottom: 40),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── 1. Habitat Natural Vivo do Porko (340px) ──────────────────────
+          // ── 1. Habitat Natural Vivo do Porko (340px -> 116px no scroll) ───
           HabitatHeaderWidget(
             coins: coins,
             streakDays: streakDays,
             isDark: isDark,
-            hasGoals: goals.isNotEmpty,
+            hasGoals: totalActiveGoals > 0,
             mood: porkoMood,
             mascot: equippedMascot,
+            collapseProgress: _collapseProgress,
             onProfileTap: () => _openProfileModal(context),
             onCoinsTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -313,7 +766,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     'Saldo: $coins Oinc Coins! Ganhe +1 por real poupado e +50 no 1º depósito do dia.',
                   ),
                   behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               );
               setState(() => _currentTabIndex = 2);
@@ -332,7 +787,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                   duration: const Duration(milliseconds: 1800),
                   behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               );
             },
@@ -340,32 +797,45 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
           const SizedBox(height: 16),
 
-          // ── 2. Seção "Minhas Metas" ───────────────────────────────────────
+          // ── 2. Cabeçalho "🎯 Minhas metas" + Ver Total + Menu Sanduíche (☰) + Nova ──
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  '🎯 Minhas metas',
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                const Flexible(
+                  child: Text(
+                    '🎯 Minhas metas',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
+                const SizedBox(width: 8),
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Botão "👁️ Ver total" com privacidade
+                    // Pílula "👁️ Ver total" (Timer de 3s)
                     GestureDetector(
                       onTap: _toggleRevealTotal,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF243B2A) : const Color(0xFFEEF3EE),
+                          color: isDark
+                              ? const Color(0xFF243B2A)
+                              : const Color(0xFFEEF3EE),
                           borderRadius: BorderRadius.circular(999),
                           border: Border.all(
-                            color: isDark ? const Color(0xFF2F4A37) : const Color(0xFFE2E8E2),
+                            color: isDark
+                                ? const Color(0xFF2F4A37)
+                                : const Color(0xFFE2E8E2),
                           ),
                         ),
                         child: Text(
@@ -376,65 +846,103 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             fontFamily: 'Poppins',
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
-                            color: isDark ? Colors.white : const Color(0xFF1A1A1A),
+                            color: isDark
+                                ? Colors.white
+                                : const Color(0xFF1A1A1A),
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
 
-                    // Menu popup de ordenação
-                    PopupMenuButton<SortOrder>(
-                      tooltip: 'Ordenar metas',
-                      initialValue: sortOrder,
-                      onSelected: (order) {
-                        HapticFeedback.selectionClick();
-                        ref.read(sortOrderProvider.notifier).setOrder(order);
-                      },
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      color: isDark ? const Color(0xFF1B2E22) : Colors.white,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF243B2A) : const Color(0xFFEEF3EE),
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(
-                            color: isDark ? const Color(0xFF2F4A37) : const Color(0xFFE2E8E2),
+                    // Botão de Filtro do Tipo Menu Sanduíche (☰) (AUD-06)
+                    Tooltip(
+                      message: 'Ordenar metas',
+                      child: Semantics(
+                        button: true,
+                        label: 'Menu sanduíche para filtrar e ordenar metas',
+                        child: InkWell(
+                          onTap: () => _openHamburgerFilterSheet(context),
+                          borderRadius: BorderRadius.circular(12),
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              Container(
+                                width: 36,
+                                height: 34,
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? const Color(0xFF243B2A)
+                                      : const Color(0xFFEEF3EE),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: hasCustomFilterOrSort
+                                        ? primary
+                                        : (isDark
+                                            ? const Color(0xFF2F4A37)
+                                            : const Color(0xFFE2E8E2)),
+                                    width: hasCustomFilterOrSort ? 1.6 : 1.0,
+                                  ),
+                                ),
+                                child: Icon(
+                                  Icons.menu_rounded,
+                                  size: 20,
+                                  color: hasCustomFilterOrSort
+                                      ? primary
+                                      : (isDark
+                                          ? Colors.white
+                                          : const Color(0xFF1A1A1A)),
+                                ),
+                              ),
+                              if (hasCustomFilterOrSort)
+                                Positioned(
+                                  top: -2,
+                                  right: -2,
+                                  child: Container(
+                                    width: 9,
+                                    height: 9,
+                                    decoration: BoxDecoration(
+                                      color: primary,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: isDark
+                                            ? const Color(0xFF0D1F14)
+                                            : Colors.white,
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              _sortOrderLabel(sortOrder),
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: isDark ? Colors.white : const Color(0xFF1A1A1A),
-                              ),
-                            ),
-                            const SizedBox(width: 2),
-                            const Icon(Icons.arrow_drop_down_rounded, size: 16),
-                          ],
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+
+                    // Botão "+ Nova" idêntico ao protótipo
+                    InkWell(
+                      onTap: () => _openGoalForm(context),
+                      borderRadius: BorderRadius.circular(999),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: primary.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          '+ Nova',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w800,
+                            color: primary,
+                          ),
                         ),
                       ),
-                      itemBuilder: (context) => [
-                        const PopupMenuItem(
-                          value: SortOrder.createdAt,
-                          child: Text('Mais recentes', style: TextStyle(fontSize: 13)),
-                        ),
-                        const PopupMenuItem(
-                          value: SortOrder.deadline,
-                          child: Text('Por prazo', style: TextStyle(fontSize: 13)),
-                        ),
-                        const PopupMenuItem(
-                          value: SortOrder.progress,
-                          child: Text('Por progresso', style: TextStyle(fontSize: 13)),
-                        ),
-                      ],
                     ),
                   ],
                 ),
@@ -442,47 +950,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
 
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
 
-          // ── 3. Lista de Cards ou Estado Vazio ─────────────────────────────
+          // ── 3. Lista de Cards ou Estado Vazio (.empty-card com borda tracejada) ──
           if (goals.isEmpty) ...[
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
-              child: Column(
-                children: [
-                  const Text(
-                    'Comece a poupar hoje',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Crie a sua primeira meta financeira\ne acompanhe o seu progresso de forma inteligente.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: 'Nunito',
-                      fontSize: 14,
-                      color: isDark ? const Color(0xFFA5D6A7) : const Color(0xFF566259),
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton.icon(
-                    onPressed: () => _openGoalForm(context),
-                    icon: const Icon(Icons.add_rounded),
-                    label: const Text('Criar primeira meta'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isDark ? const Color(0xFF00C853) : const Color(0xFF2E7D32),
-                      foregroundColor: isDark ? const Color(0xFF04210F) : Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                    ),
-                  ),
-                ],
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+              child: _DashedEmptyCard(
+                isDark: isDark,
+                isFilteredEmpty:
+                    totalActiveGoals > 0 && goalFilter != GoalFilter.all,
+                onActionTap: () {
+                  if (totalActiveGoals > 0 && goalFilter != GoalFilter.all) {
+                    ref
+                        .read(goalFilterProvider.notifier)
+                        .setFilter(GoalFilter.all);
+                  } else {
+                    _openGoalForm(context);
+                  }
+                },
               ),
             ),
           ] else ...[
@@ -508,16 +994,160 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
     );
   }
+}
 
-  // Rótulo textual da ordenação escolhida
-  String _sortOrderLabel(SortOrder order) {
-    switch (order) {
-      case SortOrder.deadline:
-        return 'Prazo mais curto';
-      case SortOrder.progress:
-        return 'Maior progresso';
-      case SortOrder.createdAt:
-        return 'Mais recentes';
+/// Card de Estado Vazio idêntico a `.empty-card` do protótipo (borda 2px dashed)
+class _DashedEmptyCard extends StatelessWidget {
+  final bool isDark;
+  final bool isFilteredEmpty;
+  final VoidCallback onActionTap;
+
+  const _DashedEmptyCard({
+    required this.isDark,
+    required this.isFilteredEmpty,
+    required this.onActionTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = isDark ? const Color(0xFF00C853) : const Color(0xFF2E7D32);
+    final borderColor =
+        isDark ? const Color(0xFF2F4A37) : const Color(0xFFCBD5E1);
+
+    return CustomPaint(
+      painter: _DashedRRectPainter(
+        color: borderColor,
+        radius: 26,
+        strokeWidth: 2,
+      ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 26),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1B2E22) : Colors.white,
+          borderRadius: BorderRadius.circular(26),
+        ),
+        child: Column(
+          children: [
+            Text(
+              isFilteredEmpty ? '🔍' : '🌱',
+              style: const TextStyle(fontSize: 42),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              isFilteredEmpty
+                  ? 'Nenhuma meta neste filtro'
+                  : 'Seu cofrinho está vazio!',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                color: isDark ? Colors.white : const Color(0xFF1A1A1A),
+              ),
+            ),
+            if (!isFilteredEmpty) ...[
+              const SizedBox(height: 2),
+              Text(
+                'Comece a poupar hoje',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: primary,
+                ),
+              ),
+            ],
+            const SizedBox(height: 6),
+            Text(
+              isFilteredEmpty
+                  ? 'Altere ou limpe o filtro do menu sanduíche (☰) para ver suas outras metas.'
+                  : 'Crie sua primeira meta em menos de 1 minuto. O Porko vai cuidar das suas economias e te recompensar a cada depósito!',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Nunito',
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                color:
+                    isDark ? const Color(0xFFA5D6A7) : const Color(0xFF566259),
+                height: 1.45,
+              ),
+            ),
+            const SizedBox(height: 18),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: onActionTap,
+                icon: Icon(
+                  isFilteredEmpty ? Icons.filter_alt_off_rounded : Icons.add_rounded,
+                  size: 18,
+                ),
+                label: Text(
+                  isFilteredEmpty ? 'Mostrar todas as metas' : 'Criar primeira meta',
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primary,
+                  foregroundColor:
+                      isDark ? const Color(0xFF04210F) : Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DashedRRectPainter extends CustomPainter {
+  final Color color;
+  final double radius;
+  final double strokeWidth;
+
+  _DashedRRectPainter({
+    required this.color,
+    required this.radius,
+    required this.strokeWidth,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth;
+
+    final rrect = RRect.fromRectAndRadius(
+      Offset.zero & size,
+      Radius.circular(radius),
+    );
+    final path = Path()..addRRect(rrect);
+
+    const dashWidth = 7.0;
+    const dashSpace = 5.0;
+    for (final metric in path.computeMetrics()) {
+      double distance = 0.0;
+      while (distance < metric.length) {
+        final next = (distance + dashWidth).clamp(0.0, metric.length);
+        canvas.drawPath(metric.extractPath(distance, next), paint);
+        distance += dashWidth + dashSpace;
+      }
     }
   }
+
+  @override
+  bool shouldRepaint(_DashedRRectPainter old) =>
+      old.color != color ||
+      old.radius != radius ||
+      old.strokeWidth != strokeWidth;
 }

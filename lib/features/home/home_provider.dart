@@ -23,6 +23,8 @@ class SortOrderNotifier extends StateNotifier<SortOrder> {
           state = SortOrder.deadline;
         } else if (saved == 'progress') {
           state = SortOrder.progress;
+        } else if (saved == 'savedAmount') {
+          state = SortOrder.savedAmount;
         } else {
           state = SortOrder.createdAt;
         }
@@ -49,16 +51,78 @@ final sortOrderProvider =
   return SortOrderNotifier();
 });
 
-// ── Provider principal da Home com reatividade imediata (< 200ms) ──────────
+// ── Notifier de filtro de metas (Menu Sanduíche ☰) ─────────────────────────
+class GoalFilterNotifier extends StateNotifier<GoalFilter> {
+  static const _boxName = 'settings';
+  static const _filterKey = 'goal_status_filter';
+
+  GoalFilterNotifier() : super(GoalFilter.all) {
+    _loadFilter();
+  }
+
+  void _loadFilter() {
+    try {
+      if (Hive.isBoxOpen(_boxName)) {
+        final box = Hive.box(_boxName);
+        final saved = box.get(_filterKey) as String?;
+        if (saved != null) {
+          state = GoalFilter.values.firstWhere(
+            (f) => f.name == saved,
+            orElse: () => GoalFilter.all,
+          );
+        }
+      }
+    } catch (_) {
+      state = GoalFilter.all;
+    }
+  }
+
+  Future<void> setFilter(GoalFilter filter) async {
+    HapticFeedback.selectionClick();
+    state = filter;
+    try {
+      if (Hive.isBoxOpen(_boxName)) {
+        final box = Hive.box(_boxName);
+        await box.put(_filterKey, filter.name);
+      }
+    } catch (_) {}
+  }
+}
+
+final goalFilterProvider =
+    StateNotifierProvider<GoalFilterNotifier, GoalFilter>((ref) {
+  return GoalFilterNotifier();
+});
+
+// ── Provider principal da Home com filtro + ordenação e reatividade ─────────
 final homeGoalsProvider = Provider<List<GoalModel>>((ref) {
   final repo = ref.watch(goalRepositoryProvider);
   final order = ref.watch(sortOrderProvider);
+  final filter = ref.watch(goalFilterProvider);
 
-  // Observa mudanças nas boxes de metas e depósitos
   ref.watch(goalBoxChangesProvider);
   ref.watch(depositBoxChangesProvider);
 
-  return repo.getActive(order: order);
+  if (filter == GoalFilter.archived) {
+    return repo.sortGoals(repo.getArchived(), order);
+  }
+
+  final active = repo.getActive(order: order);
+  switch (filter) {
+    case GoalFilter.inProgress:
+      return active.where((g) => !g.isCompleted).toList();
+    case GoalFilter.completed:
+      return active.where((g) => g.isCompleted).toList();
+    case GoalFilter.withDeadline:
+      return active.where((g) => g.deadline != null).toList();
+    case GoalFilter.freePace:
+      return active
+          .where((g) => g.deadline == null || g.rhythm == 'free')
+          .toList();
+    case GoalFilter.all:
+    case GoalFilter.archived:
+      return active;
+  }
 });
 
 // ── Provider de estatísticas gerais com reatividade imediata ─────────────
