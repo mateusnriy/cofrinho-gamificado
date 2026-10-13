@@ -239,78 +239,26 @@ class HabitatHeaderWidget extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Perfil do usuário com Flexible para evitar overflow em 320px
+                    // Perfil do usuário reativo ao Hive com Flexible para evitar overflow em 320px
                     Flexible(
-                      child: GestureDetector(
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          onProfileTap();
-                        },
-                        behavior: HitTestBehavior.opaque,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 42,
-                              height: 42,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: const RadialGradient(
-                                  center: Alignment(-0.3, -0.35),
-                                  colors: [Color(0xFFFFDCE5), Color(0xFFFF8DA1)],
-                                ),
-                                border: Border.all(color: Colors.white, width: 2),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.22),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
+                      child: Hive.isBoxOpen('settings')
+                          ? ValueListenableBuilder<Box>(
+                              valueListenable: Hive.box('settings').listenable(
+                                keys: const ['user_name', 'user_avatar'],
                               ),
-                              child: Center(
-                                child: Text(
-                                  userAvatar,
-                                  style: const TextStyle(fontSize: 22),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 9),
-                            Flexible(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    'Olá, $userName!',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontFamily: 'Poppins',
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                      height: 1.1,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Nível 3 • Poupador(a)',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontFamily: 'Nunito',
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                      color: const Color(0xFFA7F3D0)
-                                          .withValues(alpha: 0.95),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                              builder: (context, box, _) {
+                                var liveName = (box.get('user_name',
+                                            defaultValue: 'Ana') as String?)
+                                        ?.trim() ??
+                                    'Ana';
+                                if (liveName.isEmpty) liveName = 'Ana';
+                                final liveAvatar = (box.get('user_avatar',
+                                        defaultValue: '🐷') as String?) ??
+                                    '🐷';
+                                return _buildProfileRow(liveName, liveAvatar);
+                              },
+                            )
+                          : _buildProfileRow(userName, userAvatar),
                     ),
 
                     const SizedBox(width: 8),
@@ -457,6 +405,73 @@ class HabitatHeaderWidget extends StatelessWidget {
       default:
         return const [];
     }
+  }
+
+  Widget _buildProfileRow(String name, String avatar) {
+    return GestureDetector(
+      onTap: onProfileTap,
+      behavior: HitTestBehavior.opaque,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withValues(alpha: 0.28),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.55),
+                width: 2,
+              ),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              avatar,
+              style: const TextStyle(fontSize: 18),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Olá, $name!',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black38,
+                        blurRadius: 6,
+                        offset: Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                ),
+                Text(
+                  'Nível 3 • Poupador(a)',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: 'Nunito',
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFFA7F3D0).withValues(alpha: 0.95),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildBlurPill({

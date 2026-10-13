@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import '../../core/providers/global_providers.dart';
 import '../../data/models/mascot_model.dart';
 import '../../widgets/porko_canvas_widget.dart';
@@ -16,7 +17,7 @@ class MascotScreen extends ConsumerStatefulWidget {
 }
 
 class _MascotScreenState extends ConsumerState<MascotScreen> {
-  // Limites e contadores locais dos 4 cuidados diários conforme especificado (Decisão 6.2)
+  // Limites e contadores diários persistidos no Hive (Decisão 6.2 / RV-03)
   int _petCount = 0;
   int _feedCount = 0;
   int _playCount = 0;
@@ -28,6 +29,44 @@ class _MascotScreenState extends ConsumerState<MascotScreen> {
   static const int _feedMax = 2;
   static const int _playMax = 2;
   static const int _callMax = 3;
+
+  String get _todayIso {
+    final now = DateTime.now();
+    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDailyCareCounts();
+  }
+
+  void _loadDailyCareCounts() {
+    if (!Hive.isBoxOpen('settings')) return;
+    final box = Hive.box('settings');
+    final savedDate = box.get('care_date') as String?;
+    if (savedDate == _todayIso) {
+      _petCount = (box.get('care_pet', defaultValue: 0) as int?) ?? 0;
+      _feedCount = (box.get('care_feed', defaultValue: 0) as int?) ?? 0;
+      _playCount = (box.get('care_play', defaultValue: 0) as int?) ?? 0;
+      _callCount = (box.get('care_call', defaultValue: 0) as int?) ?? 0;
+    } else {
+      _petCount = 0;
+      _feedCount = 0;
+      _playCount = 0;
+      _callCount = 0;
+    }
+  }
+
+  Future<void> _saveDailyCareCounts() async {
+    if (!Hive.isBoxOpen('settings')) return;
+    final box = Hive.box('settings');
+    await box.put('care_date', _todayIso);
+    await box.put('care_pet', _petCount);
+    await box.put('care_feed', _feedCount);
+    await box.put('care_play', _playCount);
+    await box.put('care_call', _callCount);
+  }
 
   @override
   void dispose() {
@@ -154,6 +193,7 @@ class _MascotScreenState extends ConsumerState<MascotScreen> {
       return;
     }
 
+    await _saveDailyCareCounts();
     _triggerReaction(reactionType);
     await action();
 

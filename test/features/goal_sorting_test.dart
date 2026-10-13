@@ -175,19 +175,20 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Abre menu de ordenação
-      final sortButton = find.byTooltip('Ordenar metas');
-      expect(sortButton, findsOneWidget);
-      await tester.tap(sortButton);
+      // Abre menu sanduíche de filtro e ordenação (Sprint 3 - AUD-08)
+      final filterButton = find.byIcon(Icons.menu_rounded);
+      expect(filterButton, findsOneWidget);
+      await tester.tap(filterButton);
       await tester.pumpAndSettle();
 
-      // Opções do menu devem estar visíveis com ícones e labels
+      // Opções do sheet devem estar visíveis com ícones e labels
+      expect(find.text('Filtrar e Ordenar Metas'), findsOneWidget);
       expect(find.text('Mais recentes'), findsWidgets);
-      expect(find.text('Por prazo'), findsOneWidget);
-      expect(find.text('Por progresso'), findsOneWidget);
+      expect(find.text('Prazo mais próximo'), findsOneWidget);
+      expect(find.text('Maior progresso (%)'), findsOneWidget);
 
-      // Seleciona "Por prazo"
-      await tester.tap(find.text('Por prazo'));
+      // Seleciona "Prazo mais próximo"
+      await tester.tap(find.text('Prazo mais próximo'));
       await tester.pumpAndSettle();
 
       // Verifica se a preferência foi salva no Hive

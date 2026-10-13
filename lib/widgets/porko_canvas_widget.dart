@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import '../data/models/mascot_model.dart';
 
 /// Renderiza o mascote Porko em Soft 3D (Claymorphism) de 9 camadas volumétricas,
@@ -41,10 +42,14 @@ class _PorkoCanvasWidgetState extends State<PorkoCanvasWidget>
   bool _isBlinking = false;
   Timer? _blinkTimer;
 
-  // Verifica se estamos rodando dentro do ambiente de testes (para não travar pumpAndSettle)
+  // Verifica se estamos rodando em ambiente de testes ou com "Reduzir Movimento" ativo (WCAG 2.1 / NFR11)
   bool get _isTestEnvironment {
     final bindingName = WidgetsBinding.instance.runtimeType.toString();
-    return bindingName.contains('Test') || bindingName.contains('Automated');
+    final isTest =
+        bindingName.contains('Test') || bindingName.contains('Automated');
+    final reduceMotion = Hive.isBoxOpen('settings') &&
+        (Hive.box('settings').get('reduce_motion') == true);
+    return isTest || reduceMotion;
   }
 
   @override
