@@ -211,10 +211,13 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // No estado vazio, o Porko e o convite de criar primeira meta devem estar visíveis
+      // No estado vazio, o Porko Soft 3D e o card .empty-card de criar primeira meta devem estar visíveis
       expect(find.byType(PorkoCanvasWidget), findsOneWidget);
-      expect(find.text('Comece a poupar hoje'), findsOneWidget);
-      expect(find.text('Criar primeira meta'), findsOneWidget);
+      expect(find.text('Crie sua primeira meta'), findsOneWidget);
+      expect(
+        find.textContaining('para começar a poupar com o Porko!'),
+        findsOneWidget,
+      );
     });
   });
 }
