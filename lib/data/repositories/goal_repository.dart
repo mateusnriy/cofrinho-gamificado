@@ -8,23 +8,35 @@ class GoalRepository {
 
   // ── Leitura ──────────────────────────────────────────────────────────────
 
-  /// Retorna todas as metas ativas (não arquivadas), ordenadas conforme critério
+  // Pega todas as metas ativas organizadas pela ordem escolhida
   List<GoalModel> getActive({SortOrder order = SortOrder.createdAt}) {
-    final goals = _box.values
-        .where((g) => !g.isArchived)
-        .toList();
+    final goals = _box.values.where((g) => !g.isArchived).toList();
+    return sortGoals(goals, order);
+  }
 
+  /// Ordena uma lista de metas pelo critério selecionado
+  List<GoalModel> sortGoals(List<GoalModel> goals, SortOrder order) {
+    final sorted = List<GoalModel>.from(goals);
     switch (order) {
       case SortOrder.deadline:
-        goals.sort((a, b) => a.deadline.compareTo(b.deadline));
+        sorted.sort((a, b) {
+          if (a.deadline == null && b.deadline == null) return 0;
+          if (a.deadline == null) return 1;
+          if (b.deadline == null) return -1;
+          return a.deadline!.compareTo(b.deadline!);
+        });
       case SortOrder.progress:
-        goals.sort((a, b) => b.progress.compareTo(a.progress));
+        sorted.sort((a, b) => b.progress.compareTo(a.progress));
+      case SortOrder.savedAmount:
+        sorted.sort((a, b) => b.savedAmount.compareTo(a.savedAmount));
       case SortOrder.createdAt:
-        goals.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        sorted.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     }
-
-    return goals;
+    return sorted;
   }
+
+  /// Retorna todas as metas (ativas e arquivadas)
+  List<GoalModel> getAll() => _box.values.toList();
 
   /// Retorna metas arquivadas
   List<GoalModel> getArchived() {
@@ -34,6 +46,8 @@ class GoalRepository {
 
   /// Busca meta por ID. Retorna null se não encontrar.
   GoalModel? getById(String id) {
+    final direct = _box.get(id);
+    if (direct != null) return direct;
     try {
       return _box.values.firstWhere((g) => g.id == id);
     } catch (_) {
@@ -51,18 +65,32 @@ class GoalRepository {
     await _box.put(goal.id, goal);
   }
 
+  /// Alias para criar uma nova meta
+  Future<void> create(GoalModel goal) => save(goal);
+
   /// Atualiza uma meta existente
   Future<void> update(GoalModel goal) async {
     await _box.put(goal.id, goal);
   }
 
-  /// Adiciona valor ao savedAmount e persiste
+  // Adiciona o valor do depósito na meta e salva no banco
   Future<void> addDeposit(String goalId, double amount) async {
     final goal = getById(goalId);
     if (goal == null) return;
 
     final updated = goal.copyWith(
       savedAmount: goal.savedAmount + amount,
+    );
+    await _box.put(goalId, updated);
+  }
+
+  // Remove o valor do depósito estornado na meta
+  Future<void> removeDeposit(String goalId, double amount) async {
+    final goal = getById(goalId);
+    if (goal == null) return;
+
+    final updated = goal.copyWith(
+      savedAmount: (goal.savedAmount - amount).clamp(0.0, double.infinity),
     );
     await _box.put(goalId, updated);
   }
@@ -80,7 +108,7 @@ class GoalRepository {
     await _box.delete(goalId);
   }
 
-  /// Estatísticas gerais
+  /// Estatísticas gerais de patrimônio consolidado
   Map<String, dynamic> getStats() {
     final active = getActive();
     final totalTarget = active.fold<double>(0, (s, g) => s + g.targetAmount);
@@ -92,9 +120,21 @@ class GoalRepository {
       'totalTarget': totalTarget,
       'totalSaved': totalSaved,
       'completed': completed,
-      'overallProgress': totalTarget > 0 ? totalSaved / totalTarget : 0.0,
+      'completedGoals': completed,
+      'overallProgress': totalTarget > 0
+          ? (totalSaved / totalTarget).clamp(0.0, 1.0)
+          : 0.0,
     };
   }
 }
 
-enum SortOrder { createdAt, deadline, progress }
+enum SortOrder { createdAt, deadline, progress, savedAmount }
+
+enum GoalFilter {
+  all,
+  inProgress,
+  completed,
+  withDeadline,
+  freePace,
+  archived,
+}

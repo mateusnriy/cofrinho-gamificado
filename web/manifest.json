@@ -1,11 +1,11 @@
 {
-    "name": "cofrinho_digital",
-    "short_name": "cofrinho_digital",
+    "name": "Oinc — Meu cofrinho virtual",
+    "short_name": "Oinc!",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#2E7D32",
+    "theme_color": "#2E7D32",
+    "description": "Oinc — Meu cofrinho virtual gamificado com o mascote Porko em Soft 3D.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

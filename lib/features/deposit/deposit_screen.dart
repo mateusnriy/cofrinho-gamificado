@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uuid/uuid.dart';
 
-import '../../core/utils/formatters.dart';
-import '../../data/models/deposit_model.dart';
-import '../../data/models/goal_model.dart';
 import '../../core/providers/global_providers.dart';
+import '../../core/utils/formatters.dart';
+import '../../data/models/goal_model.dart';
+import '../../domain/usecases/register_deposit_use_case.dart';
+import '../../widgets/celebration_overlay.dart';
 
 class DepositScreen extends ConsumerStatefulWidget {
   final GoalModel goal;
@@ -26,9 +26,17 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
   bool _isLoading = false;
-  String? _error;
+  int _dateOffset = 0; // 0 para Hoje, 1 para Ontem (resgate de streak)
+  late GoalModel _selectedGoal;
 
-  static const _quickValues = [10.0, 25.0, 50.0, 100.0, 200.0, 500.0];
+  // UX-DR3: Chips de valores rápidos
+  static const _quickValues = [10.0, 25.0, 50.0, 100.0, 200.0];
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedGoal = widget.goal;
+  }
 
   @override
   void dispose() {
@@ -37,39 +45,98 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
     super.dispose();
   }
 
+  double? get _parsedAmount {
+    final text = _amountController.text
+        .replaceAll('R\$', '')
+        .replaceAll(' ', '')
+        .replaceAll('.', '')
+        .replaceAll(',', '.');
+    return double.tryParse(text);
+  }
+
+  bool get _isAmountValid {
+    final amount = _parsedAmount;
+    if (amount == null || amount <= 0) return false;
+    if (amount > _selectedGoal.remainingAmount) return false;
+    return true;
+  }
+
+  String? get _validationError {
+    final text = _amountController.text.trim();
+    if (text.isEmpty) return null;
+
+    final amount = _parsedAmount;
+    if (amount == null || amount <= 0) {
+      return 'Informe um valor maior que zero';
+    }
+    if (amount > _selectedGoal.remainingAmount) {
+      return 'O valor não pode ultrapassar o saldo restante (${AppFormatters.currency(_selectedGoal.remainingAmount)})';
+    }
+    return null;
+  }
+
+  double? _calculateSuggestedRhythmAmount(GoalModel goal) {
+    if (goal.remainingAmount <= 0) return null;
+    if (goal.deadline == null || goal.rhythm == 'free') return null;
+
+    final daysLeft =
+        goal.deadline!.difference(DateTime.now()).inDays.clamp(1, 9999);
+    double raw;
+    if (goal.rhythm == 'daily') {
+      raw = goal.remainingAmount / daysLeft;
+    } else if (goal.rhythm == 'monthly') {
+      final months = (daysLeft / 30.0).clamp(1.0, 999.0);
+      raw = goal.remainingAmount / months;
+    } else {
+      final weeks = (daysLeft / 7.0).clamp(1.0, 999.0);
+      raw = goal.remainingAmount / weeks;
+    }
+    final rounded = raw.ceilToDouble();
+    return rounded.clamp(1.0, goal.remainingAmount);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final goal = widget.goal;
+    final goal = _selectedGoal;
     final goalColor = Color(goal.colorValue);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    final maxAvailableHeight = MediaQuery.of(context).size.height * 0.85;
+    final maxAvailableHeight = MediaQuery.of(context).size.height * 0.88;
+    final amount = _parsedAmount;
+    final errorMessage = _validationError;
+    final suggestedAmount = _calculateSuggestedRhythmAmount(goal);
+    final activeGoals = ref
+        .watch(goalRepositoryProvider)
+        .getActive()
+        .where((g) => !g.isCompleted)
+        .toList();
 
     return SafeArea(
-      // RESPONSIVIDADE: Permite *scroll* se o teclado tapar o conteúdo
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: maxAvailableHeight),
         child: Container(
           decoration: BoxDecoration(
             color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           ),
-          padding: EdgeInsets.fromLTRB(20, 16, 20, 20 + bottomInset),
+          padding: EdgeInsets.fromLTRB(20, 14, 20, 20 + bottomInset),
           child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Center(
                   child: Container(
-                    width: 40,
-                    height: 4,
+                    width: 42,
+                    height: 5,
                     decoration: BoxDecoration(
                       color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: BorderRadius.circular(99),
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
                 Row(
                   children: [
                     Container(
@@ -77,11 +144,13 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                       height: 44,
                       decoration: BoxDecoration(
                         color: goalColor.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(13),
                       ),
                       child: Icon(
-                        IconData(goal.iconCodePoint,
-                            fontFamily: 'MaterialIcons'),
+                        IconData(
+                          goal.iconCodePoint,
+                          fontFamily: 'MaterialIcons',
+                        ),
                         color: goalColor,
                         size: 22,
                       ),
@@ -92,7 +161,7 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Registar depósito',
+                            'Registrar Depósito',
                             style: Theme.of(context).textTheme.headlineSmall,
                           ),
                           Text(
@@ -105,33 +174,107 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
+
+                // Seletor horizontal de metas (#depGoals do protótipo — AUD-14)
+                if (activeGoals.length > 1) ...[
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    height: 36,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: activeGoals.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 8),
+                      itemBuilder: (context, index) {
+                        final g = activeGoals[index];
+                        final isSelected = g.id == goal.id;
+                        final gColor = Color(g.colorValue);
+                        return InkWell(
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            setState(() => _selectedGoal = g);
+                          },
+                          borderRadius: BorderRadius.circular(99),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? gColor
+                                  : (isDark
+                                      ? const Color(0xFF243B2A)
+                                      : const Color(0xFFEEF3EE)),
+                              borderRadius: BorderRadius.circular(99),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  IconData(
+                                    g.iconCodePoint,
+                                    fontFamily: 'MaterialIcons',
+                                  ),
+                                  size: 15,
+                                  color: isSelected ? Colors.white : gColor,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  g.name,
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                    color: isSelected
+                                        ? Colors.white
+                                        : (isDark
+                                            ? Colors.white
+                                            : const Color(0xFF1A1A1A)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+
+                const SizedBox(height: 16),
                 _MiniProgressBar(goal: goal, goalColor: goalColor),
-                const SizedBox(height: 20),
-                Text('Valor depositado',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyMedium
-                        ?.copyWith(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 16),
+                Text(
+                  'Valor depositado *',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(fontWeight: FontWeight.w600),
+                ),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _amountController,
                   autofocus: true,
-                  // CORREÇÃO DO TECLADO NO IOS
                   keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true, signed: true),
+                    decimal: true,
+                    signed: false,
+                  ),
                   inputFormatters: [
                     FilteringTextInputFormatter.allow(RegExp(r'[0-9,.]')),
                   ],
                   style: const TextStyle(
-                      fontSize: 20, fontWeight: FontWeight.bold),
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                  ),
                   decoration: InputDecoration(
                     hintText: '0,00',
                     prefixText: 'R\$ ',
                     prefixStyle: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: goalColor),
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: goalColor,
+                    ),
                     suffixIcon: _amountController.text.isNotEmpty
                         ? IconButton(
                             icon: const Icon(Icons.clear_rounded),
@@ -142,64 +285,262 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                           )
                         : null,
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide(color: goalColor, width: 2),
                     ),
                   ),
-                  onChanged: (_) => setState(() => _error = null),
+                  onChanged: (_) => setState(() {}),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
+
+                // Botão largo de Valor Sugerido pelo Ritmo (#depChips do protótipo — AUD-14)
+                if (suggestedAmount != null) ...[
+                  SizedBox(
+                    width: double.infinity,
+                    child: InkWell(
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        _amountController.text = suggestedAmount
+                            .toStringAsFixed(2)
+                            .replaceAll('.', ',');
+                        setState(() {});
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 9,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? const Color(0xFF132E1C)
+                              : const Color(0xFFE8F5E9),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: const Color(0xFF2E7D32).withValues(alpha: 0.4),
+                          ),
+                        ),
+                        child: Text(
+                          '⭐ Sugerido pelo seu ritmo: ${AppFormatters.currency(suggestedAmount)}',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                            color: isDark
+                                ? const Color(0xFF00C853)
+                                : const Color(0xFF2E7D32),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+
+                // UX-DR3: Chips de valores rápidos (+R$ 10 a +R$ 200)
                 SizedBox(
-                  height: 36,
+                  height: 38,
                   child: ListView(
                     scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
                     children: _quickValues.map((value) {
+                      final isWithinBudget = value <= goal.remainingAmount;
+
                       return Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: ActionChip(
-                          label: Text('R\$ ${value.toStringAsFixed(0)}'),
+                          label: Text('+R\$ ${value.toStringAsFixed(0)}'),
                           onPressed: () {
+                            HapticFeedback.lightImpact();
                             _amountController.text =
                                 value.toStringAsFixed(2).replaceAll('.', ',');
-                            setState(() => _error = null);
+                            setState(() {});
                           },
-                          backgroundColor: goalColor.withValues(alpha: 0.1),
+                          backgroundColor: isWithinBudget
+                              ? goalColor.withValues(alpha: 0.1)
+                              : Colors.grey.withValues(alpha: 0.1),
                           labelStyle: TextStyle(
-                              color: goalColor, fontWeight: FontWeight.w500),
+                            color: isWithinBudget
+                                ? goalColor
+                                : Theme.of(context).disabledColor,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                          ),
                           side: BorderSide(
-                              color: goalColor.withValues(alpha: 0.3)),
+                            color: isWithinBudget
+                                ? goalColor.withValues(alpha: 0.3)
+                                : Colors.transparent,
+                          ),
                         ),
                       );
                     }).toList(),
                   ),
                 ),
+
+                const SizedBox(height: 12),
+
+                // Seletor de data Hoje vs. Ontem (resgate de streak do dia anterior)
+                Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => setState(() => _dateOffset = 0),
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          decoration: BoxDecoration(
+                            color: _dateOffset == 0
+                                ? goalColor.withValues(alpha: 0.15)
+                                : Theme.of(context).cardTheme.color,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: _dateOffset == 0
+                                  ? goalColor
+                                  : Colors.grey.withValues(alpha: 0.2),
+                              width: _dateOffset == 0 ? 1.5 : 1,
+                            ),
+                          ),
+                          child: Text(
+                            'Hoje',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: _dateOffset == 0 ? goalColor : null,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => setState(() => _dateOffset = 1),
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          decoration: BoxDecoration(
+                            color: _dateOffset == 1
+                                ? goalColor.withValues(alpha: 0.15)
+                                : Theme.of(context).cardTheme.color,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: _dateOffset == 1
+                                  ? goalColor
+                                  : Colors.grey.withValues(alpha: 0.2),
+                              width: _dateOffset == 1 ? 1.5 : 1,
+                            ),
+                          ),
+                          child: Text(
+                            'Ontem',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: _dateOffset == 1 ? goalColor : null,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                // UX-DR3: Contador de Oinc Coins em tempo real
+                if (_isAmountValid && amount != null && amount > 0) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF3C7),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFFDE68A)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('🪙', style: TextStyle(fontSize: 18)),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            '+${amount.floor()} Oinc Coins serão adicionadas!',
+                            style: const TextStyle(
+                              color: Color(0xFF92400E),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
+                if (errorMessage != null) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF2F2),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFFECACA)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.error_outline_rounded,
+                          color: Color(0xFFEF4444),
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            errorMessage,
+                            style: const TextStyle(
+                              color: Color(0xFFB91C1C),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
                 const SizedBox(height: 16),
-                Text('Observação (opcional)',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyMedium
-                        ?.copyWith(fontWeight: FontWeight.w600)),
+                Text(
+                  'Observação (opcional)',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(fontWeight: FontWeight.w600),
+                ),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _noteController,
                   textCapitalization: TextCapitalization.sentences,
                   decoration: const InputDecoration(
-                    hintText: 'Ex: Sobras do salário...',
+                    hintText: 'Ex: Economia do cafezinho, bônus...',
                     prefixIcon: Icon(Icons.notes_rounded),
                   ),
                 ),
-                if (_error != null) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    _error!,
-                    style: const TextStyle(color: Colors.red, fontSize: 13),
-                  ),
-                ],
+
                 const SizedBox(height: 24),
                 ElevatedButton(
-                  onPressed: _isLoading ? null : _save,
+                  onPressed: (_isLoading || !_isAmountValid) ? null : _save,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: goalColor,
+                    disabledBackgroundColor: goalColor.withValues(alpha: 0.35),
                   ),
                   child: _isLoading
                       ? const SizedBox(
@@ -210,8 +551,15 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
                             color: Colors.white,
                           ),
                         )
-                      : const Text('Confirmar depósito'),
+                      : const Text(
+                          'Confirmar Depósito',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                 ),
+                const SizedBox(height: 8),
               ],
             ),
           ),
@@ -220,59 +568,97 @@ class _DepositScreenState extends ConsumerState<DepositScreen> {
     );
   }
 
+  // Valida e salva o novo depósito na meta
   Future<void> _save() async {
     FocusScope.of(context).unfocus();
 
-    final text =
-        _amountController.text.replaceAll('.', '').replaceAll(',', '.');
-    final amount = double.tryParse(text);
+    final amount = _parsedAmount;
+    if (amount == null || !_isAmountValid) return;
 
-    if (amount == null || amount <= 0) {
-      setState(() => _error = 'Informe um valor válido');
-      return;
-    }
+    HapticFeedback.mediumImpact();
 
     setState(() {
       _isLoading = true;
-      _error = null;
     });
 
-    final deposit = DepositModel(
-      id: const Uuid().v4(),
-      goalId: widget.goal.id,
-      amount: amount,
-      date: DateTime.now(),
-      note: _noteController.text.trim().isEmpty
-          ? null
-          : _noteController.text.trim(),
-    );
-
-    final depositRepo = ref.read(depositRepositoryProvider);
-    final goalRepo = ref.read(goalRepositoryProvider);
-
-    await depositRepo.save(deposit);
-    await goalRepo.addDeposit(widget.goal.id, amount);
+    final targetGoal = _selectedGoal;
+    DepositResult? result;
+    try {
+      final useCase = ref.read(registerDepositUseCaseProvider);
+      result = await useCase.execute(
+        goalId: targetGoal.id,
+        amount: amount,
+        date: DateTime.now().subtract(Duration(days: _dateOffset)),
+        note: _noteController.text,
+      );
+    } catch (_) {}
 
     setState(() => _isLoading = false);
 
-    if (mounted) {
-      Navigator.of(context).pop();
+    if (result != null && mounted) {
+      if (result.newMilestoneReached ||
+          result.isGoalCompleted ||
+          result.newBadges.isNotEmpty) {
+        HapticFeedback.heavyImpact();
+      } else {
+        HapticFeedback.mediumImpact();
+      }
+
+      final messenger = ScaffoldMessenger.of(context);
+      final rootNav = Navigator.of(context);
+      final overlay = rootNav.overlay;
+      if (rootNav.canPop()) {
+        rootNav.pop();
+      }
       widget.onDepositSaved?.call();
 
-      // CORREÇÃO: Feedback visual da ação de depósito guardado!
-      ScaffoldMessenger.of(context).showSnackBar(
+      if (rootNav.context.mounted) {
+        if (result.isGoalCompleted) {
+          CelebrationOverlay.showGoalCompleted(
+            rootNav.context,
+            overlayState: overlay,
+            goalName: targetGoal.name,
+          );
+        } else if (result.newBadges.isNotEmpty) {
+          CelebrationOverlay.showBadgeUnlocked(
+            rootNav.context,
+            overlayState: overlay,
+            badgeTitle: result.newBadges.first.title,
+          );
+        } else if (result.newMilestoneReached) {
+          CelebrationOverlay.showMilestoneReached(
+            rootNav.context,
+            overlayState: overlay,
+            goalName: targetGoal.name,
+            milestonePercent: result.milestonesAfter * 25,
+          );
+        }
+      }
+
+      final bonusMessage =
+          result.dailyBonusEarned ? ' (com +50 de bônus diário!)' : '';
+      final milestoneMessage = result.newMilestoneReached
+          ? ' 🎯 Novo marco de ${result.milestonesAfter * 25}% atingido!'
+          : '';
+
+      messenger.showSnackBar(
         SnackBar(
           content: Row(
             children: [
               const Icon(Icons.check_circle_rounded, color: Colors.white),
               const SizedBox(width: 8),
-              Text('Depósito de ${AppFormatters.currency(amount)} registado!'),
+              Expanded(
+                child: Text(
+                  'Depósito de ${AppFormatters.currency(amount)} registrado! 🪙 +${result.coinsEarned} Oinc Coins$bonusMessage!$milestoneMessage',
+                ),
+              ),
             ],
           ),
           backgroundColor: const Color(0xFF10B981),
           behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
     }
@@ -296,13 +682,15 @@ class _MiniProgressBar extends StatelessWidget {
               AppFormatters.currency(goal.savedAmount),
               style: TextStyle(
                 color: goalColor,
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
               ),
             ),
             Text(
               '${AppFormatters.percent(goal.progressPercent)} de ${AppFormatters.currency(goal.targetAmount)}',
-              style: Theme.of(context).textTheme.bodySmall,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
             ),
           ],
         ),
@@ -311,7 +699,7 @@ class _MiniProgressBar extends StatelessWidget {
           borderRadius: BorderRadius.circular(6),
           child: LinearProgressIndicator(
             value: goal.progress,
-            minHeight: 6,
+            minHeight: 8,
             backgroundColor: goalColor.withValues(alpha: 0.12),
             valueColor: AlwaysStoppedAnimation<Color>(goalColor),
           ),
@@ -322,7 +710,7 @@ class _MiniProgressBar extends StatelessWidget {
           child: Text(
             'Faltam ${AppFormatters.currency(goal.remainingAmount)}',
             style:
-                Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11),
+                Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 12),
           ),
         ),
       ],
