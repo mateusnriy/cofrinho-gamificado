@@ -13,14 +13,15 @@ Thumbs.db
 .swiftpm/
 migrate_working_dir/
 
-# IntelliJ related
+# IntelliJ / Android Studio related
 *.iml
 *.ipr
 *.iws
 .idea/
 
-# Visual Studio Code
+# Visual Studio Code & Widget Preview
 .vscode/
+.widget_preview/
 
 # Flutter / Dart / Pub related
 **/doc/api/
@@ -50,13 +51,7 @@ key.properties
 app.*.symbols
 app.*.map.json
 
-# Android Studio will place build artifacts here
+# Android Studio build artifacts
 /android/app/debug
 /android/app/profile
 /android/app/release
-
-# BMad Method Tooling & Artifacts (local only)
-_bmad/
-_bmad-output/
-# Widget Preview related
-.widget_preview/
