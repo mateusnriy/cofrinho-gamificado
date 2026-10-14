@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="lib/assets/icon/logo.png" alt="Oinc Logo" width="130"/>
+  <img src="lib/assets/icon/logo.png" alt="Oinc Logo 3D" width="140"/>
 </p>
 
 <h1 align="center">🐷 Oinc — Meu cofrinho virtual</h1>
 
 <p align="center">
-  <strong>Transforme o hábito de poupar dinheiro em uma jornada divertida, visual em Soft 3D e 100% offline.</strong>
+  <strong>Transforme o hábito de poupar dinheiro em um jogo leve, gostoso e visual em Soft 3D — 100% offline e sem culpa!</strong>
 </p>
 
 <p align="center">
@@ -13,142 +13,142 @@
   <img alt="Dart" src="https://img.shields.io/badge/Dart-3.x-0175C2?style=flat-square&logo=dart&logoColor=white"/>
   <img alt="Hive" src="https://img.shields.io/badge/Hive-2.2.3-FFCA28?style=flat-square"/>
   <img alt="Riverpod" src="https://img.shields.io/badge/Riverpod-2.5.1-00BCD4?style=flat-square"/>
-  <img alt="Design" src="https://img.shields.io/badge/Design-Soft%203D%20Claymorphism-FF8DA1?style=flat-square"/>
-  <img alt="Offline-First" src="https://img.shields.io/badge/Modo-100%25%20Offline-success?style=flat-square"/>
-  <img alt="Sem Anúncios" src="https://img.shields.io/badge/Anúncios-Zero-blueviolet?style=flat-square"/>
-  <img alt="License" src="https://img.shields.io/badge/licença-MIT-green?style=flat-square"/>
+  <img alt="Design" src="https://img.shields.io/badge/Estilo-Soft%203D%20Claymorphism-FF8DA1?style=flat-square"/>
+  <img alt="Offline" src="https://img.shields.io/badge/Modo-100%25%20Offline-success?style=flat-square"/>
+  <img alt="Zero Anúncios" src="https://img.shields.io/badge/Anúncios-Zero-blueviolet?style=flat-square"/>
+  <img alt="Licença" src="https://img.shields.io/badge/Licen%C3%A7a-MIT-green?style=flat-square"/>
 </p>
 
 <p align="center">
-  📖 <strong><a href="APP-OVERVIEW.md">Leia o Guia Oficial do Produto e Publicação (APP-OVERVIEW.md)</a></strong>
+  📖 <strong><a href="APP-OVERVIEW.md">Clique aqui para ver o Guia Completo do Produto & ASO (APP-OVERVIEW.md)</a></strong>
 </p>
 
 ---
 
-## 📋 Sobre o Projeto
+## 👋 E aí! Boas-vindas ao Oinc!
 
-O **Oinc — Meu cofrinho virtual** é um aplicativo multiplataforma (**Android, iOS e Web**) gratuito e **100% offline-first**, focado em educação financeira prática e gamificação comportamental acolhedora (*anti-culpa*). Desenvolvido em **Flutter** com estética **Soft 3D (Claymorphism)**, o aplicativo combate a procrastinação financeira criando um **duplo loop de recompensa**: você poupa dinheiro na vida real enquanto cuida, interage e personaliza o seu mascote **Porko** e o seu habitat natural.
+Seja muito bem-vindo(a) ao repositório do **Oinc**! 
 
-A cada economia registrada, você ganha **Oinc Coins (`🪙`)** para desbloquear peles, chapéus, roupas e decorações de cenário na **Porko Store**, conquista insígnias colecionáveis, avança em trilhas de marcos (*milestones*) e mantém sequências diárias (*streaks* `🔥`).
+Sabe aquela sensação chata de tentar juntar dinheiro usando uma planilha fria ou um app bancário cheio de gráficos complicados, cobranças e notificações ansiosas? Pois é... eu também cansei disso.
 
-Tudo isso com **privacidade absoluta**: sem logins, sem vínculo bancário, sem coleta de dados na nuvem e sem anúncios. Seus dados permanecem exclusivamente no seu dispositivo.
+Eu criei o **Oinc** para transformar a economia financeira em algo que dê **vontade de abrir todos os dias**: uma experiência visual encantadora com visual **Soft 3D (Claymorphism)**, um mascote carismático chamado **Porko** que reage aos seus hábitos, e um sistema de recompensas lúdico onde **você cuida do seu dinheiro na vida real enquanto cuida do seu cofrinho virtual no app**.
 
----
-
-## 🎯 O Que o Oinc Resolve?
-
-1. **Gratificação imediata ao poupar:** Guardar dinheiro deixa de parecer uma perda imediata e passa a gerar celebrações a 60fps com chuva de confetes, evolução do mascote e moedas virtuais.
-2. **Planejamento financeiro descomplicado (Com ou Sem Prazo):** O aplicativo calcula automaticamente quanto guardar por **dia**, **semana** ou **mês** para atingir sua meta no prazo — ou permite poupar livremente na modalidade **🌱 No meu ritmo (Sem prazo)**.
-3. **Gamificação acolhedora e anti-culpa:** O bem-estar do mascote Porko possui um piso protetor de `40%`, incentivando a consistência positiva sem punições frustrantes.
-4. **Privacidade, Acessibilidade e Ergonomia Mobile:** Suporte a **Modo Privacidade** (ocultar valores em `R$`), **Redução de Animações e Movimento** (WCAG 2.1), alvos de toque $\ge 48\text{dp}$, responsividade de `320px` a telas largas e **Backup Local JSON**.
+Tudo isso com um compromisso inegociável: **privacidade total**. O app é **100% offline-first**. Nada de login, nada de vincular conta bancária, nada de anúncios chatos e zero dados enviados para a nuvem. O dinheiro é seu, a privacidade é sua e o controle está na sua mão.
 
 ---
 
-## ✨ Funcionalidades Principais
+## 🎮 A Filosofia do Oinc: Poupar Sem Culpa
 
-### 🏞️ Habitat Vivo & Mascote Porko em Soft 3D (Claymorphism)
-- **Renderização Procedural de 9 Camadas:** O [`PorkoCanvasWidget`](lib/widgets/porko_canvas_widget.dart) desenha o mascote com esferas volumétricas, iluminação especular radial, sombra projetada no chão, respiração contínua, piscar natural e caminhada suave pelo cenário.
-- **Habitat Colapsável (`340px -> 116px`):** O [`HabitatHeaderWidget`](lib/widgets/habitat_header_widget.dart) alterna entre **Céu Diurno** (sol e nuvens) e **Céu Noturno** (lua, estrelas cintilantes e caminha aconchegante), exibindo decorações de cenário equipadas (`🪴 Vasos`, `🎏 Bandeirinhas`, `🌈 Arco-íris`, `✨ Estrelas`) e encolhendo suavemente durante a rolagem.
+A maioria dos apps de finanças falha porque foca apenas na restrição e na culpa (*"você gastou demais!", "meta atrasada!"*). O Oinc parte de uma abordagem psicológica diferente:
 
-### 🎯 Wizard de Metas em 3 Passos & Dashboard com Filtro Sanduíche (`☰`)
-- **Criação Guiada em 3 Passos ([`GoalFormScreen`](lib/features/goal_form/goal_form_screen.dart)):**
-  1. **Passo 1 — Seu Sonho:** Escolha entre 8 ícones, 6 cores vibrantes, valor-alvo e prazo (chips rápidos de `3m`, `6m`, `1 ano`, `2 anos`, calendário ou o botão **Sem prazo — vou guardando no meu ritmo**).
-  2. **Passo 2 — Seu Plano:** Compare projeções em tempo real nos cards **Diário**, **Semanal**, **Mensal** ou **🌱 No meu ritmo**, e ative lembretes locais.
-  3. **Passo 3 — Revisão com o Porko:** Confirme todos os detalhes da meta acompanhado pelo mascote Soft 3D.
-- **Cards de Meta Táteis ([`GoalCard`](lib/widgets/goal_card.dart)):** Exibem ícone em caixa Soft 3D, barra de progresso, ritmo recomendado em destaque, prazo restante e botão direto **`💰 Depositar ›`**.
-- **Filtro Tipo Menu Sanduíche (`☰`) ([`HomeScreen`](lib/features/home/home_screen.dart)):** Filtre suas metas por status (*Todas*, *No ritmo*, *Atrasadas*, *Concluídas*, *Sem prazo definido*) e ordene por *Mais recentes*, *Prazo mais próximo* ou *Maior progresso (%)*.
-
-### 📊 Detalhe da Meta em 3 Abas & Depósitos Inteligentes
-- **Tela de Detalhes ([`GoalDetailScreen`](lib/features/goal_detail/goal_detail_screen.dart)):**
-  - **Cabeçalho Imersivo:** Valor acumulado, percentual e card translúcido com *Faltam*, *Status* e *Prazo*.
-  - **Aba Jornada ([`MilestoneMapCard`](lib/widgets/milestone_map_card.dart)):** Checkpoints de `25%`, `50%`, `75%` e `100%` com recompensas de `+25` a `+150 🪙` e caixa de incentivo do Porko.
-  - **Aba Histórico:** Lista completa de aportes com notas, datas e **exclusão com estorno atômico de Oinc Coins**.
-  - **Aba Evolução:** Gráfico mensal interativo (`fl_chart`) e resumo completo do plano.
-- **Tela de Depósito ([`DepositScreen`](lib/features/deposit/deposit_screen.dart)):**
-  - Botão em destaque **⭐ Sugerido pelo seu ritmo**, chips rápidos (`+R$ 10`, `+R$ 25`, `+R$ 50`, `+R$ 100`, `+R$ 200`), seletor horizontal para alternar de meta sem sair da tela e suporte a registro *Hoje* ou *Ontem* (resgate de streak).
-
-### 🐾 Cantinho do Mascote, Porko Store & Conquistas
-- **Cantinho do Mascote ([`MascotScreen`](lib/features/mascot/mascot_screen.dart)):** Palco Soft 3D interativo, edição do nome do mascote, barras de *Felicidade* e *Energia* (com piso anti-culpa de `40%`) e **Grid 2x2 de Cuidados Diários** (*Fazer carinho*, *Alimentar*, *Brincar* e *Chamar*) com limites diários persistidos.
-- **Lojinha do Porko ([`PorkoStoreScreen`](lib/features/shop/porko_store_screen.dart)):** 16 itens cosméticos em 4 categorias (*Peles*, *Chapéus*, *Roupas* e *Cenários*) com palco de experimentação ao vivo antes da compra.
-- **Galeria de Conquistas ([`BadgesGalleryScreen`](lib/features/gamification/badges_gallery_screen.dart)):** 8 medalhas colecionáveis com barra de progresso e contadores de depósitos, streaks e metas concluídas.
-
-### ⚙️ Perfil e Ajustes Expandido (7 Seções)
-- **Modal Completo ([`ProfileSettingsModal`](lib/features/profile/profile_settings_modal.dart)):**
-  1. **Perfil e Identidade:** Edição ao vivo de apelido e escolha entre 8 avatares;
-  2. **Aparência e Acessibilidade:** Alternância entre Modo Claro (Céu Dia), Modo Escuro (Céu Noite) e **Reduzir Animações e Movimento**;
-  3. **Preferências Financeiras:** Escolha do ritmo padrão (*Diário*, *Semanal*, *Mensal*, *No meu ritmo*) e **Modo Privacidade (`R$ •••••`)**;
-  4. **Sons, Vibração e Lembretes:** Controle de efeitos táteis e horário de notificações locais;
-  5. **Privacidade e Backup Local:** Geração e cópia de **Resumo JSON 100% Offline** para a área de transferência;
-  6. **Resumo da Conta:** Estatísticas consolidadas de patrimônio, metas, streaks e Oinc Coins;
-  7. **Zona de Perigo:** Reinicialização segura de dados com dupla confirmação.
+- 🪙 **Duplo Loop de Recompensa:** Guardar dinheiro no mundo real gera recompensa imediata no jogo. Cada depósito registrado rende confetes a 60fps, alegra o mascote e te dá **Oinc Coins (`🪙`)** para usar na lojinha.
+- 🐷 **Gamificação Anti-Culpa:** O Porko nunca "morre" nem fica triste de forma punitiva. Ele tem um piso de felicidade e energia de **40%**, garantindo que o app seja sempre um abraço acolhedor quando você voltar.
+- 🌱 **No Seu Ritmo:** Tem metas com data marcada (ex: viagem de férias)? O app calcula as parcelas. Quer só guardar sem pressão (ex: reserva de emergência)? O modo **"No meu ritmo"** te deixa livre de cobranças de prazos.
 
 ---
 
-## 🛠️ Tecnologias & Dependências
+## ✨ Um Passeio Pelas Funcionalidades
 
-| Tecnologia | Versão | Função no Projeto |
-| :--- | :--- | :--- |
-| [Flutter SDK](https://flutter.dev) | 3.x | Framework UI multiplataforma (Android, iOS, Web) |
-| [Dart](https://dart.dev) | ≥ 3.0.0 | Linguagem fortemente tipada |
-| [Flutter Riverpod](https://riverpod.dev) | ^2.5.1 | Gerenciamento de estado reativo e injeção de dependências |
-| [Hive](https://pub.dev/packages/hive) + [hive_flutter](https://pub.dev/packages/hive_flutter) | ^2.2.3 / ^1.1.0 | Banco de dados NoSQL local de alta velocidade (100% offline-first) |
-| [fl_chart](https://pub.dev/packages/fl_chart) | ^0.68.0 | Gráficos interativos de evolução mensal |
-| [flutter_local_notifications](https://pub.dev/packages/flutter_local_notifications) | ^17.2.2 | Agendamento de lembretes diários locais sem servidor externo |
-| [timezone](https://pub.dev/packages/timezone) + [flutter_timezone](https://pub.dev/packages/flutter_timezone) | ^0.9.2 / ^5.0.2 | Precisão de fuso horário para notificações locais |
-| [intl](https://pub.dev/packages/intl) | ^0.20.2 | Formatação monetária (`pt_BR` / BRL) e datas |
-| [uuid](https://pub.dev/packages/uuid) | ^4.4.0 | Geração de identificadores únicos para metas e depósitos |
+### 🏞️ 1. O Habitat Vivo & O Mascote Porko em Soft 3D
+- **Claymorphism Procedural de 9 Camadas:** O [`PorkoCanvasWidget`](lib/widgets/porko_canvas_widget.dart) desenha o Porko puramente em código Flutter, com iluminação suave, reflexos táteis, bochechas coradas, respiração contínua e piscar de olhos natural.
+- **Cenário Dinâmico Dia & Noite:** O [`HabitatHeaderWidget`](lib/widgets/habitat_header_widget.dart) muda de acordo com o tema. De dia temos sol e colinas ensolaradas; de noite, lua, estrelas cintilantes e uma caminha aconchegante para o Porko descansar.
+- **Colapso Suave no Scroll (`340px -> 116px`):** O cabeçalho encolhe com transição suave conforme você navega pelas metas, mantendo o resumo de moedas e nível sempre acessível.
+
+### 🎯 2. Criando Metas em 3 Passos
+Nada de formulários gigantes! A criação é guiada pelo [`GoalFormScreen`](lib/features/goal_form/goal_form_screen.dart):
+1. **Passo 1 — O Sonho:** Dê um nome, escolha um dos 8 ícones representativos, uma das 6 cores vibrantes, o valor-alvo e o prazo (com atalhos rápidos ou o botão **Sem prazo — vou guardando no meu ritmo**).
+2. **Passo 2 — O Plano:** O app calcula na hora quanto guardar por **dia**, **semana** ou **mês**, ou trava automaticamente no ritmo livre caso você não tenha prazo fixo.
+3. **Passo 3 — Com o Porko:** O mascote aparece na tela para revisar tudo com você antes de confirmar.
+
+### ☰ 3. Minhas Metas & Filtro Sanduíche
+- **Cards Táteis:** Cada meta no [`GoalCard`](lib/widgets/goal_card.dart) mostra o progresso visual, dias restantes, ritmo sugerido e o botão direto **`💰 Depositar ›`**.
+- **Menu Sanduíche Esperto:** No topo da [`HomeScreen`](lib/features/home/home_screen.dart), toque no ícone `☰` para filtrar por status (*Todas*, *No ritmo*, *Atrasadas*, *Concluídas*, *Sem prazo*) e ordenar por *Mais recentes*, *Prazo* ou *Maior progresso*.
+
+### 📊 4. Detalhe da Meta em 3 Abas & Depósito Rápido
+Ao abrir uma meta no [`GoalDetailScreen`](lib/features/goal_detail/goal_detail_screen.dart), você tem:
+- **Aba Jornada:** Uma trilha de marcos em **25%, 50%, 75% e 100%** com recompensas crescentes em Oinc Coins e mensagens carinhosas do Porko.
+- **Aba Histórico:** Extrato transparente dos depósitos, permitindo excluir lançamentos com **estorno atômico de moedas**.
+- **Aba Evolução:** Gráfico de barras interativo mês a mês e resumo de projeção.
+- **Depósitos Fáceis ([`DepositScreen`](lib/features/deposit/deposit_screen.dart)):** Botão de valor sugerido pelo seu ritmo, atalhos rápidos (`+R$ 10`, `+R$ 25`, `+R$ 50`, `+R$ 100`, `+R$ 200`) e seletor horizontal para trocar de meta sem voltar à tela inicial.
+
+### 🐾 5. Cantinho do Mascote & Lojinha
+- **Cuidado Diário ([`MascotScreen`](lib/features/mascot/mascot_screen.dart)):** Grid 2x2 com ações táteis (*Fazer carinho*, *Alimentar*, *Brincar* e *Chamar*) com limites diários salvos no banco.
+- **Porko Store ([`PorkoStoreScreen`](lib/features/shop/porko_store_screen.dart)):** 16 itens cosméticos (peles temáticas como o *Porko de Ouro*, chapéus, gravatas, óculos e cenários como *Arco-íris* e *Plantinhas*) que você experimenta ao vivo no mini-palco 3D antes de comprar com suas Oinc Coins conquistadas.
+
+### ⚙️ 6. Perfil, Acessibilidade & Privacidade
+No [`ProfileSettingsModal`](lib/features/profile/profile_settings_modal.dart), você encontra 7 seções completas:
+- **Identidade:** Troque seu nome e escolha entre 8 avatares animados.
+- **Acessibilidade:** Suporte a **Reduzir Animações e Movimento** (WCAG 2.1) e alternância do tema Claro/Escuro.
+- **Modo Privacidade:** Oculte seus saldos com um toque (`R$ •••••`).
+- **Backup Local:** Exporte e copie todo o seu histórico em formato **JSON** direto para a área de transferência.
 
 ---
 
-## 🏗️ Arquitetura do Projeto
+## 🛠️ Tecnologias Utilizadas
 
-O código-fonte adota **Clean Architecture** combinada com organização **Feature-First**:
+Escolhi tecnologias modernas, estáveis e pensadas para máxima performance offline:
+
+| Tecnologia | O que faz no projeto? |
+| :--- | :--- |
+| **[Flutter 3.x](https://flutter.dev)** | Framework multiplataforma de alta fidelidade visual (Android, iOS e Web). |
+| **[Dart ≥ 3.0](https://dart.dev)** | Linguagem tipada, moderna e segura com suporte a pattern matching e records. |
+| **[Flutter Riverpod 2.5](https://riverpod.dev)** | Gerenciamento de estado reativo, testável e sem boilerplate desnecessário. |
+| **[Hive NoSQL 2.2](https://pub.dev/packages/hive)** | Banco de dados local ultra-rápido, leve e 100% offline-first. |
+| **[fl_chart](https://pub.dev/packages/fl_chart)** | Gráficos fluidos para visualização de depósitos e evolução financeira. |
+| **[flutter_local_notifications](https://pub.dev/packages/flutter_local_notifications)** | Notificações e lembretes locais agendados no próprio celular, sem backend. |
+| **[intl](https://pub.dev/packages/intl)** | Formatação de moeda no padrão brasileiro (`pt_BR` / R$) e datas. |
+
+---
+
+## 📁 Estrutura do Projeto
+
+Organizei o código seguindo os princípios de **Clean Architecture** com modularização **Feature-First**:
 
 ```text
 lib/
 ├── app/
-│   └── app.dart                           # Configuração raiz do MaterialApp, temas e navegação inicial
+│   └── app.dart                           # MaterialApp, rotas e tema do aplicativo
 ├── assets/
-│   └── icon/logo.png                      # Ícone oficial do Oinc
+│   └── icon/logo.png                      # Ícone oficial 3D do mascote Porko (1024x1024)
 ├── core/
-│   ├── providers/                         # Providers globais Riverpod e controle de tema Claro/Escuro
-│   ├── theme/                             # Tokens de design v3.2, tipografia (Poppins/Quicksand/Nunito) e cores
-│   └── utils/                             # Calculadora de ritmo financeiro, formatadores BRL e notificações
+│   ├── providers/                         # Providers globais (Riverpod) e controle de tema
+│   ├── theme/                             # Cores, gradientes, tipografia (Poppins/Quicksand)
+│   └── utils/                             # Formatação BRL, calculadora de ritmo e notificações
 ├── data/
-│   ├── models/                            # Modelos persistentes Hive (GoalModel, DepositModel, MascotModel, etc.)
-│   └── repositories/                      # Repositórios locais (Metas, Depósitos, Gamificação, Carteira, Mascote)
+│   ├── models/                            # Modelos de dados com TypeAdapters do Hive
+│   └── repositories/                      # Repositórios locais (Metas, Depósitos, Mascote, Loja)
 ├── domain/
-│   └── usecases/                          # Casos de uso atômicos (RegisterDepositUseCase, EvaluateBadgesUseCase)
+│   └── usecases/                          # Regras de negócio puras (RegisterDeposit, EvaluateBadges)
 ├── features/
-│   ├── deposit/                           # Tela de depósito com sugestão de ritmo e seletor rápido de metas
-│   ├── gamification/                      # Galeria de conquistas (BadgesGalleryScreen)
-│   ├── goal_detail/                       # Detalhe da meta em 3 abas (Jornada, Histórico, Evolução)
-│   ├── goal_form/                         # Wizard de criação/edição de metas em 3 passos (com/sem prazo)
-│   ├── home/                              # Dashboard principal, resumo consolidado e filtro Menu Sanduíche (☰)
-│   ├── mascot/                            # Cantinho do Mascote com palco Soft 3D e Grid 2x2 de cuidados
-│   ├── onboarding/                        # Boas-vindas e apresentação interativa do Oinc
-│   ├── profile/                           # Modal de Perfil e Ajustes com 7 seções e backup JSON offline
-│   ├── shop/                              # Porko Store com 4 categorias e preview ao vivo
-│   └── splash/                            # Splash screen animada com identidade Oinc
+│   ├── deposit/                           # Tela de depósitos e atalhos rápidos
+│   ├── gamification/                      # Galeria de conquistas colecionáveis
+│   ├── goal_detail/                       # Detalhes da meta em 3 abas (Jornada, Histórico, Evolução)
+│   ├── goal_form/                         # Wizard de criação de metas em 3 passos
+│   ├── home/                              # Dashboard com resumo, metas e menu sanduíche
+│   ├── mascot/                            # Cantinho do Mascote (afeto diário e bem-estar)
+│   ├── onboarding/                        # Telas de boas-vindas do Oinc
+│   ├── profile/                           # Modal de ajustes (7 seções e backup JSON)
+│   ├── shop/                              # Lojinha de cosméticos e cenários com preview 3D
+│   └── splash/                            # Abertura animada com identidade visual do Oinc
 ├── widgets/
-│   ├── celebration_overlay.dart           # Overlay de celebração e chuva de confetes a 60fps
-│   ├── custom_docked_bottom_bar.dart      # Barra inferior de 4 abas com botão central (+) projetado
-│   ├── economy_suggestions_card.dart      # Seletor de ritmo (Diário, Semanal, Mensal, No meu ritmo)
-│   ├── goal_card.dart                     # Card de meta Soft 3D com atalho direto de depósito
-│   ├── habitat_header_widget.dart         # Cabeçalho colapsável (340px -> 116px) com cenário Dia/Noite
-│   ├── milestone_map_card.dart            # Trilha visual de marcos (25%, 50%, 75%, 100%)
-│   └── porko_canvas_widget.dart           # Renderizador Soft 3D (Claymorphism) de 9 camadas do mascote Porko
-└── main.dart                              # Inicialização do Hive, adaptadores e bootstrap da aplicação
+│   ├── celebration_overlay.dart           # Chuva de confetes a 60fps
+│   ├── custom_docked_bottom_bar.dart      # Barra inferior de 4 abas com botão (+) projetado
+│   ├── economy_suggestions_card.dart      # Seletor inteligente de ritmo financeiro
+│   ├── goal_card.dart                     # Card de meta Soft 3D com atalho de depósito
+│   ├── habitat_header_widget.dart         # Cabeçalho vivo com cenário e colapso no scroll
+│   ├── milestone_map_card.dart            # Trilha visual de checkpoints (25% a 100%)
+│   └── porko_canvas_widget.dart           # Renderizador volumétrico Soft 3D do Porko
+└── main.dart                              # Bootstrap do Hive e inicialização do Flutter
 ```
 
 ---
 
-## 🚀 Como Executar Localmente
+## 🚀 Como Rodar o Projeto
 
 ### Pré-requisitos
-- [Flutter SDK](https://docs.flutter.dev/get-started/install) (versão `>= 3.0.0`)
-- Navegador Chrome/Edge (para execução Web) ou Emulador Android / iOS Simulator
-- Git instalado
+- **Flutter SDK** instalado (versão `≥ 3.0.0`)
+- **Git** configurado
+- Um emulador (Android/iOS) ou o navegador Chrome/Edge
 
 ### Passo a Passo
 
@@ -157,18 +157,18 @@ lib/
 git clone https://github.com/mateusnriy/cofrinho-gamificado.git
 cd cofrinho-gamificado
 
-# 2. Instale as dependências
+# 2. Baixe as dependências
 flutter pub get
 
-# 3. (Opcional) Regere os adaptadores Hive caso modifique os modelos
+# 3. (Opcional) Regere os adaptadores do Hive se fizer alterações nos modelos
 dart run build_runner build --delete-conflicting-outputs
 
-# 4. Execute no dispositivo ou navegador
+# 4. Inicie o aplicativo
 flutter run
 ```
 
-### 🌐 Build para Web (Produção Local)
-Como os ícones personalizados das metas são instanciados dinamicamente a partir dos códigos salvos no Hive, utilize a flag `--no-tree-shake-icons` ao gerar o build web:
+### 🌐 Build para Web
+Para gerar o build de produção para a Web preservando todos os ícones das metas:
 
 ```bash
 flutter build web --no-tree-shake-icons
@@ -176,28 +176,39 @@ flutter build web --no-tree-shake-icons
 
 ---
 
-## 🧪 Qualidade & Testes Automatizados
+## 🧪 Qualidade & Testes
 
-O projeto conta com **19 suítes de testes automatizados** em [`test/features/`](test/features/) cobrindo regras de negócio, persistência Hive, gamificação, responsividade em viewports compactos (`320px`), acessibilidade (`reduce_motion`) e fluxos E2E:
+A estabilidade do app é garantida por **19 suítes de testes automatizados**, cobrindo regras de negócio, persistência no Hive, acessibilidade e testes de integração de ponta a ponta (E2E):
 
 ```bash
-# Executar análise estática (0 erros / 0 avisos)
+# Verificar qualidade do código e lint (zero erros e zero warnings!)
 dart analyze
 
-# Executar todas as suítes de testes
+# Rodar todos os testes automatizados
 flutter test
 ```
 
 ---
 
-## 👥 Autor
+## 🌿 Versionamento & Git Flow
 
-| Desenvolvedor | Papel | GitHub |
-| :--- | :--- | :--- |
-| **Mateus Neri** | Engenharia de Software, Arquitetura & UI/UX | [@mateusnriy](https://github.com/mateusnriy) |
+O repositório segue estritamente o modelo **Git Flow** e a convenção de **Commits Semânticos**:
+- `main`: Branch de produção estável;
+- `develop`: Branch de integração contínua;
+- `feature/*` / `chore/*`: Branches de trabalho mescladas via merge sem fast-forward (`--no-ff`).
+
+---
+
+## 👨‍💻 Autor
+
+Desenvolvido com carinho e dedicação por:
+
+**Mateus Neri**  
+- GitHub: [@mateusnriy](https://github.com/mateusnriy)  
+- Projeto: [cofrinho-gamificado](https://github.com/mateusnriy/cofrinho-gamificado)
 
 ---
 
 ## 📄 Licença
 
-Este projeto é distribuído sob a licença **MIT**.
+Este projeto é de código aberto sob a licença [MIT](LICENSE). Sinta-se à vontade para clonar, estudar, sugerir melhorias ou usar como inspiração para os seus próprios projetos! 🐷✨
